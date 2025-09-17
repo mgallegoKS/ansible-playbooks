@@ -6,7 +6,7 @@
 
   tasks:
     - name: "Get Record By UID"
-      keeper_get_record:
+      keepersecurity.keeper_secrets_manager.keeper_get_record:
         uid: "{{ uid }}"
         allow:
           - login

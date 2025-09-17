@@ -6,7 +6,7 @@
 
   tasks:
   - name: "Get Current Password"
-    keeper_get:
+    keepersecurity.keeper_secrets_manager.keeper_get:
       uid: "{{ uid }}"
       field: "Password"
     register: "my_password"
@@ -17,7 +17,7 @@
       verbosity: 0
 
   - name: "Set Password Value"
-    keeper_set:
+    keepersecurity.keeper_secrets_manager.keeper_set:
       uid: "{{ uid }}"
       field: "password"
       value: "{{ new_password }}"

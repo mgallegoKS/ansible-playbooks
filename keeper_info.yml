@@ -13,4 +13,4 @@
 
   tasks:
   - name: "Get Info"
-    keeper_info:
+    keepersecurity.keeper_secrets_manager.keeper_info:

@@ -6,9 +6,9 @@
 
   tasks:
     - name: "Remove By UID"
-      keeper_remove:
+      keepersecurity.keeper_secrets_manager.keeper_remove:
         uid: "{{ uid }}"
 
     - name: "Remove By Title"
-      keeper_remove:
+      keepersecurity.keeper_secrets_manager.keeper_remove:
         title: "{{ title }}"
