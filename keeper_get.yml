@@ -6,7 +6,7 @@
 
   tasks:
     - name: "Get Value By UID"
-      keeper_get:
+      keepersecurity.keeper_secrets_manager.keeper_get:
         uid: "{{ uid }}"
         field: "password"
       register: "my_password"
@@ -17,7 +17,7 @@
         verbosity: 0
 
     - name: "Get Value By TITLE"
-      keeper_get:
+      keepersecurity.keeper_secrets_manager.keeper_get:
         title: "{{ title }}"
         field: "password"
       register: "my_password"
