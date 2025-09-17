@@ -1,28 +1,9 @@
-# vim: set shiftwidth=2 tabstop=2 softtabstop=-1 expandtab:
----
-- name: Keeper Get
-  hosts: "my_systems"
-  gather_facts: no
-
+- hosts: localhost
+  collections:
+    - keepersecurity.keeper_secrets_manager
   tasks:
-    - name: "Get Value By UID"
-      keepersecurity.keeper_secrets_manager.keeper_get:
-        uid: "{{ uid }}"
-        field: "password"
-      register: "my_password"
-
-    - name: "Print Password BY UID"
-      debug:
-        msg: "BY UID {{ my_password.value }}"
-        verbosity: 0
-
-    - name: "Get Value By TITLE"
-      keepersecurity.keeper_secrets_manager.keeper_get:
-        title: "{{ title }}"
-        field: "password"
-      register: "my_password"
-
-    - name: "Print Password BY TITLE"
-      debug:
-        msg: "BY TITLE {{ my_password.value }}"
-        verbosity: 0
+    - name: Get secret
+      keeper_secrets_manager_core:
+        keeper_config: "{{ keeper_config_base64 }}"
+        records:
+          - uid: "{{ record_uid }}"
