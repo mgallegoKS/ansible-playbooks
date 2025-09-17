@@ -1,0 +1,32 @@
+---
+- name: Debug Execution Environment Collections
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: List all available collections
+      shell: ansible-galaxy collection list
+      register: collections_output
+      ignore_errors: yes
+      
+    - name: Show collections output
+      debug:
+        var: collections_output.stdout_lines
+        
+    - name: Check for Keeper collection specifically
+      shell: ansible-galaxy collection list | grep -i keeper || echo "Keeper collection not found"
+      register: keeper_check
+      ignore_errors: yes
+      
+    - name: Show Keeper collection status
+      debug:
+        var: keeper_check.stdout_lines
+        
+    - name: Check Python path and modules
+      shell: python3 -c "import sys; print('\n'.join(sys.path))"
+      register: python_path
+      ignore_errors: yes
+      
+    - name: Show Python path
+      debug:
+        var: python_path.stdout_lines
