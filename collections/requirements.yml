@@ -1,3 +1,0 @@
-collections:
-  - name: keepersecurity.keeper_secrets_manager
-    source: https://sandbox-aap-mgallego-dev.apps.rm2.thpm.p1.openshiftapps.com/pulp_ansible/galaxy/published/
