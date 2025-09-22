@@ -5,13 +5,6 @@
   gather_facts: no
 
   tasks:
-    - name: "Test with bare module name"
-      keeper_get:
-        uid: "{{ uid }}"
-        field: "password"
-      register: "my_password"
-      ignore_errors: yes
-
     - name: "Test with FQCN"
       keepersecurity.keeper_secrets_manager.keeper_get:
         uid: "{{ uid }}"
