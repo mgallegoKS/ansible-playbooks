@@ -1,0 +1,30 @@
+---
+- name: Simple AAP Collection Debug
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Check collection paths
+      debug:
+        msg:
+          - "Collection paths: {{ ansible_search_path | default('not available') }}"
+          - "Python path: {{ ansible_python_interpreter | default('not available') }}"
+
+    - name: List available collections
+      command: ansible-galaxy collection list
+      register: collections_list
+      failed_when: false
+
+    - name: Show collections
+      debug:
+        var: collections_list.stdout_lines
+
+    - name: Check for keepersecurity collection specifically
+      command: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: keeper_check
+      failed_when: false
+
+    - name: Show keeper collection status
+      debug:
+        var: keeper_check

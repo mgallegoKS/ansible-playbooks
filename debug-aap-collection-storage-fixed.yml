@@ -1,0 +1,40 @@
+---
+- name: Debug AAP Collection Storage
+  hosts: localhost
+  connection: local  # This forces local connection, no SSH
+  gather_facts: false
+
+  tasks:
+    - name: Check where AAP stores uploaded collections
+      shell: |
+        echo "=== Checking common AAP collection storage locations ==="
+        find /var/lib/awx -name "*keeper*" -type f 2>/dev/null | head -10 || echo "No keeper files in /var/lib/awx"
+        echo ""
+        echo "=== Checking for collection files ==="
+        find / -name "keepersecurity-keeper_secrets_manager-*.tar.gz" -type f 2>/dev/null | head -5 || echo "No collection tarballs found"
+        echo ""
+        echo "=== Available ansible-galaxy sources ==="
+        ansible-galaxy collection list --format json 2>/dev/null | head -20 || echo "Galaxy list failed"
+      register: storage_debug
+      failed_when: false
+
+    - name: Show storage debug
+      debug:
+        var: storage_debug.stdout_lines
+
+    - name: Try different install methods
+      shell: |
+        echo "=== Method 1: Simple install ==="
+        ansible-galaxy collection install keepersecurity.keeper_secrets_manager 2>&1 || echo "Method 1 failed"
+        echo ""
+        echo "=== Method 2: Force install ==="
+        ansible-galaxy collection install keepersecurity.keeper_secrets_manager --force 2>&1 || echo "Method 2 failed"
+        echo ""
+        echo "=== Method 3: With pre-release flag ==="
+        ansible-galaxy collection install keepersecurity.keeper_secrets_manager --pre 2>&1 || echo "Method 3 failed"
+      register: install_methods
+      failed_when: false
+
+    - name: Show install method results
+      debug:
+        var: install_methods.stdout_lines
