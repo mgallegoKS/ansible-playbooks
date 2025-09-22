@@ -1,0 +1,78 @@
+---
+- name: Advanced Keeper Secrets Manager Examples for AAP
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  vars:
+    # These would typically be passed as job template variables
+    database_secret_uid: "{{ db_secret_uid | default('YOUR_DB_SECRET_UID') }}"
+    api_secret_uid: "{{ api_secret_uid | default('YOUR_API_SECRET_UID') }}"
+
+  tasks:
+    # Example 1: Database Connection using keeper_get
+    - name: Retrieve database credentials
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "{{ database_secret_uid }}"
+      register: db_creds
+      no_log: true  # Important for security
+
+    - name: Connect to database (example)
+      postgresql_db:
+        name: myapp
+        login_host: "{{ db_creds.record.login }}"
+        login_user: "{{ db_creds.record.login }}"
+        login_password: "{{ db_creds.record.password }}"
+        state: present
+
+    # Example 2: Using lookup plugin for API keys
+    - name: Call API with secret key
+      uri:
+        url: "https://api.example.com/data"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ lookup('keepersecurity.keeper_secrets_manager.keeper', api_secret_uid, 'custom_field.api_key') }}"
+        return_content: yes
+      register: api_response
+
+    # Example 3: Creating secrets (if you have write permissions)
+    - name: Create new secret in Keeper
+      keepersecurity.keeper_secrets_manager.keeper_create:
+        title: "New Application Secret"
+        record_type: "login"
+        login: "app_user"
+        password: "{{ ansible_password | default('generated_password') }}"
+        custom_fields:
+          - label: "Environment"
+            value: "production"
+          - label: "Created By"
+            value: "AAP Job {{ tower_job_id | default('manual') }}"
+      register: new_secret
+      when: create_new_secret | default(false) | bool
+
+    # Example 4: Multiple secrets in one task
+    - name: Get multiple secrets
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "{{ item }}"
+      register: multiple_secrets
+      loop:
+        - "{{ database_secret_uid }}"
+        - "{{ api_secret_uid }}"
+      no_log: true
+
+    # Example 5: Conditional secret usage
+    - name: Use different secrets based on environment
+      debug:
+        msg: "Using {{ environment }} credentials"
+      vars:
+        secret_uid: "{{ prod_secret_uid if environment == 'production' else dev_secret_uid }}"
+        secret_data: "{{ lookup('keepersecurity.keeper_secrets_manager.keeper', secret_uid) }}"
+
+    # Example 6: Cleanup/rotation example
+    - name: Archive old secrets
+      keepersecurity.keeper_secrets_manager.keeper_cleanup:
+        uid: "{{ item }}"
+        action: "archive"
+      loop: "{{ old_secret_uids | default([]) }}"
+      when: cleanup_old_secrets | default(false) | bool

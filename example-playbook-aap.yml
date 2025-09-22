@@ -1,0 +1,29 @@
+---
+- name: Example using Keeper Secrets Manager Collection in AAP
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  tasks:
+    - name: Get a secret from Keeper Vault
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "{{ secret_uid }}"
+      register: secret_result
+
+    - name: Display secret title (safe to show)
+      debug:
+        msg: "Retrieved secret: {{ secret_result.record.title }}"
+
+    - name: Use secret in a task (example with file creation)
+      file:
+        path: "/tmp/example-file.txt"
+        state: touch
+        mode: '0600'
+      vars:
+        # Access password field from the secret
+        secret_password: "{{ secret_result.record.password }}"
+
+    - name: Example using lookup plugin
+      debug:
+        msg: "Secret via lookup: {{ lookup('keepersecurity.keeper_secrets_manager.keeper', secret_uid) }}"
