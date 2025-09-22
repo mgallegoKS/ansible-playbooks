@@ -1,0 +1,6 @@
+# Place this file in your AAP project at: collections/requirements.yml
+---
+collections:
+  - name: keepersecurity.keeper_secrets_manager
+    version: "=1.2.5"  # Exact version match
+    # Don't specify source - this forces AAP to use its internal collection storage
