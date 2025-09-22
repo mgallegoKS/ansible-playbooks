@@ -1,0 +1,22 @@
+---
+- name: Force Collection Path Test
+  hosts: localhost
+  gather_facts: false
+  environment:
+    ANSIBLE_COLLECTIONS_PATH: "/runner/requirements_collections:/usr/share/ansible/collections:/home/runner/.ansible/collections"
+
+  tasks:
+    - name: Test with explicit collection path
+      ansible.builtin.debug:
+        msg: "Testing collection path override"
+
+    - name: Try keeper_get with full path
+      action: keepersecurity.keeper_secrets_manager.keeper_get
+      args:
+        uid: "test-uid-123"
+      register: result
+      failed_when: false
+
+    - name: Show result
+      debug:
+        var: result

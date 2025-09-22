@@ -1,0 +1,37 @@
+---
+- name: Debug AAP Collection Mounting
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Check AAP collection mount points
+      shell: |
+        echo "=== Checking collection paths ==="
+        ls -la /runner/requirements_collections/ 2>/dev/null || echo "No /runner/requirements_collections"
+        echo ""
+        echo "=== Checking for keepersecurity namespace ==="
+        find /runner/requirements_collections /usr/share/ansible/collections /home/runner/.ansible/collections -name "keepersecurity" -type d 2>/dev/null || echo "keepersecurity namespace not found"
+        echo ""
+        echo "=== All collection directories ==="
+        find /runner/requirements_collections /usr/share/ansible/collections /home/runner/.ansible/collections -type d -name "*keeper*" 2>/dev/null || echo "No keeper collections found"
+      register: collection_debug
+
+    - name: Show collection debug output
+      debug:
+        var: collection_debug.stdout_lines
+
+    - name: Check ansible-galaxy list
+      shell: ansible-galaxy collection list --format json
+      register: galaxy_list
+      failed_when: false
+
+    - name: Show galaxy list
+      debug:
+        var: galaxy_list.stdout
+
+    - name: Check environment variables
+      debug:
+        msg:
+          - "ANSIBLE_COLLECTIONS_PATH: {{ ansible_env.ANSIBLE_COLLECTIONS_PATH | default('not set') }}"
+          - "HOME: {{ ansible_env.HOME }}"
+          - "PWD: {{ ansible_env.PWD }}"

@@ -1,0 +1,44 @@
+---
+- name: Debug Collection Paths in AAP
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Show ansible version and paths
+      debug:
+        msg:
+          - "Ansible version: {{ ansible_version.full }}"
+          - "Collection paths: {{ ansible_search_path }}"
+
+    - name: List available collections
+      shell: ansible-galaxy collection list
+      register: collection_list
+
+    - name: Show collection list
+      debug:
+        var: collection_list.stdout_lines
+
+    - name: Check specific collection
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: keeper_collection
+      failed_when: false
+
+    - name: Show keeper collection status
+      debug:
+        var: keeper_collection
+
+    - name: Check collection installation paths
+      shell: find /usr/share/ansible/collections /home/runner/.ansible/collections /runner/requirements_collections -name "keeper_secrets_manager" -type d 2>/dev/null || true
+      register: collection_paths
+
+    - name: Show collection paths
+      debug:
+        var: collection_paths.stdout_lines
+
+    - name: Check if modules exist
+      shell: find /usr/share/ansible/collections /home/runner/.ansible/collections /runner/requirements_collections -name "keeper_get.py" 2>/dev/null || true
+      register: module_files
+
+    - name: Show module files
+      debug:
+        var: module_files.stdout_lines

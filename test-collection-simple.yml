@@ -1,0 +1,23 @@
+---
+- name: Test Collection Installation
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Try to load collection explicitly
+      ansible.builtin.set_fact:
+        test_fact: "testing"
+
+    - name: Install collection in runtime (temporary fix)
+      shell: ansible-galaxy collection install /tmp/keepersecurity-keeper_secrets_manager-1.2.5.tar.gz --force
+      ignore_errors: true
+
+    - name: Test keeper_get module
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "test-uid"
+      register: result
+      failed_when: false
+
+    - name: Show result
+      debug:
+        var: result

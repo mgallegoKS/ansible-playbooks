@@ -1,0 +1,5 @@
+---
+# Place this as: collections/requirements.yml in your AAP project
+collections:
+  - name: keepersecurity.keeper_secrets_manager
+    # Don't specify source - let AAP find the uploaded one
