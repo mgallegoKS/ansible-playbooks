@@ -1,0 +1,46 @@
+---
+- name: Test Runtime Collection Installation
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Check current collection status
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: initial_check
+      failed_when: false
+
+    - name: Show initial status
+      debug:
+        var: initial_check
+
+    - name: Try to install from AAP internal storage
+      shell: |
+        # Method 1: Try direct installation
+        ansible-galaxy collection install keepersecurity.keeper_secrets_manager:=1.2.5 --force
+      register: install_attempt1
+      failed_when: false
+
+    - name: Show install attempt 1
+      debug:
+        var: install_attempt1
+
+    - name: Check if collection is now available
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: post_install_check
+      failed_when: false
+
+    - name: Show post-install status
+      debug:
+        var: post_install_check
+
+    - name: Test the collection module
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "test-uid-will-fail-but-should-recognize-module"
+      register: module_test
+      failed_when: false
+
+    - name: Show module test result
+      debug:
+        msg:
+          - "Module test result: {{ module_test }}"
+          - "If you see 'module found' type errors instead of 'module not found', the collection is working!"

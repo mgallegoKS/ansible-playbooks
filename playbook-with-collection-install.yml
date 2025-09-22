@@ -1,0 +1,30 @@
+---
+- name: Install and Use Keeper Collection
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Install collection from AAP's uploaded collections
+      ansible.builtin.shell: |
+        # Try to install without specifying version to use uploaded one
+        ansible-galaxy collection install keepersecurity.keeper_secrets_manager --force
+      register: install_result
+      failed_when: false
+
+    - name: Show install result
+      debug:
+        var: install_result
+
+    - name: Test collection is available
+      ansible.builtin.shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: collection_check
+
+    - name: Show collection status
+      debug:
+        var: collection_check
+
+    - name: Now use the collection
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "your-actual-secret-uid"
+      register: secret_result
+      # Add your actual parameters here

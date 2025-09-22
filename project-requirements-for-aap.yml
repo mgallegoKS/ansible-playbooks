@@ -1,0 +1,5 @@
+# Create this file as: collections/requirements.yml in your AAP project
+---
+collections:
+  - name: keepersecurity.keeper_secrets_manager
+    version: "1.2.5"

@@ -1,0 +1,29 @@
+---
+- name: Install Collection at Runtime
+  hosts: localhost
+  gather_facts: false
+
+  pre_tasks:
+    # Install the uploaded collection from AAP's storage
+    - name: Install keepersecurity collection
+      shell: |
+        # Try to find the collection in AAP's storage and install it
+        if [ -f "/var/lib/awx/projects/_*/collections/ansible_collections/keepersecurity/keeper_secrets_manager/galaxy.yml" ]; then
+          ansible-galaxy collection install keepersecurity.keeper_secrets_manager --force
+        else
+          echo "Collection not found in expected locations"
+          exit 1
+        fi
+      delegate_to: localhost
+      run_once: true
+
+  tasks:
+    - name: Now try using the collection
+      keepersecurity.keeper_secrets_manager.keeper_get:
+        uid: "test-uid"
+      register: result
+      failed_when: false
+
+    - name: Show result
+      debug:
+        var: result

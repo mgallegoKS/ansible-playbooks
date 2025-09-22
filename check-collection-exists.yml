@@ -1,0 +1,55 @@
+---
+- name: Check if Collection Actually Exists in AAP
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Check requirements_collections directory
+      shell: |
+        echo "=== /runner/requirements_collections ==="
+        ls -la /runner/requirements_collections/ 2>/dev/null || echo "Directory does not exist"
+        echo ""
+        echo "=== Looking for keepersecurity ==="
+        find /runner/requirements_collections -name "keepersecurity" -type d 2>/dev/null || echo "keepersecurity not found"
+        echo ""
+        echo "=== Looking for any keeper files ==="
+        find /runner/requirements_collections -name "*keeper*" 2>/dev/null || echo "no keeper files found"
+        echo ""
+        echo "=== Show all contents ==="
+        find /runner/requirements_collections -type f | head -20 2>/dev/null || echo "no files found"
+      register: req_collections_check
+
+    - name: Show requirements_collections check
+      debug:
+        var: req_collections_check.stdout_lines
+
+    - name: Check home ansible collections
+      shell: |
+        echo "=== /home/runner/.ansible/collections ==="
+        ls -la /home/runner/.ansible/collections/ 2>/dev/null || echo "Directory does not exist"
+        find /home/runner/.ansible/collections -name "keepersecurity" -type d 2>/dev/null || echo "keepersecurity not found"
+      register: home_collections_check
+
+    - name: Show home collections check
+      debug:
+        var: home_collections_check.stdout_lines
+
+    - name: Check system collections
+      shell: |
+        echo "=== /usr/share/ansible/collections ==="
+        ls -la /usr/share/ansible/collections/ 2>/dev/null || echo "Directory does not exist"
+        find /usr/share/ansible/collections -name "keepersecurity" -type d 2>/dev/null || echo "keepersecurity not found"
+      register: system_collections_check
+
+    - name: Show system collections check
+      debug:
+        var: system_collections_check.stdout_lines
+
+    - name: Final ansible-galaxy collection list
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: galaxy_check
+      failed_when: false
+
+    - name: Show galaxy check result
+      debug:
+        var: galaxy_check
