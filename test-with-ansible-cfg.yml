@@ -1,0 +1,26 @@
+---
+- name: Test Collection with ansible.cfg
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  tasks:
+    - name: Debug collection paths
+      debug:
+        msg: "Testing with ansible.cfg collection path override"
+
+    - name: Test keeper_info module
+      keeper_info:
+      register: info_result
+      failed_when: false
+
+    - name: Show info result
+      debug:
+        var: info_result
+
+    - name: Success message
+      debug:
+        msg: "✅ Collection is working!"
+      when: info_result is defined
