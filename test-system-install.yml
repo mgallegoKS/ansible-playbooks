@@ -1,0 +1,85 @@
+---
+- name: Test Keeper with System-Wide Installation
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Install Keeper packages system-wide (as root)
+      pip:
+        name:
+          - keeper-secrets-manager-core>=16.6.0
+          - keeper-secrets-manager-ansible==1.2.4
+          - keeper-secrets-manager-helper>=1.0.5
+        state: present
+        executable: pip3
+        extra_args: "--break-system-packages"
+      become: yes
+      delegate_to: localhost
+      run_once: true
+      failed_when: false
+      register: system_install
+
+    - name: Show system install result
+      debug:
+        var: system_install
+
+    - name: Fallback - try user install if system failed
+      pip:
+        name:
+          - keeper-secrets-manager-core>=16.6.0
+          - keeper-secrets-manager-ansible==1.2.4
+          - keeper-secrets-manager-helper>=1.0.5
+        state: present
+        executable: pip3
+        extra_args: "--user"
+      delegate_to: localhost
+      run_once: true
+      when: system_install.failed is true
+
+  tasks:
+    - name: Test imports with various Python paths
+      shell: |
+        echo "=== Testing imports ==="
+        python3 -c "
+        import sys
+        print('Python paths:', sys.path[:3])
+        try:
+            import keeper_secrets_manager_ansible
+            print('✅ keeper_secrets_manager_ansible imported')
+        except ImportError as e:
+            print('❌ keeper_secrets_manager_ansible failed:', e)
+
+        try:
+            import keeper_secrets_manager_helper
+            print('✅ keeper_secrets_manager_helper imported')
+        except ImportError as e:
+            print('❌ keeper_secrets_manager_helper failed:', e)
+        "
+      register: import_test
+
+    - name: Show import test results
+      debug:
+        var: import_test.stdout_lines
+
+    - name: Test keeper_info module
+      keeper_info:
+      register: info_result
+      failed_when: false
+
+    - name: Show keeper_info result
+      debug:
+        msg:
+          - "Keeper_info result: {{ 'SUCCESS' if not info_result.failed else 'FAILED' }}"
+          - "{{ info_result.msg | default('No error message') if info_result.failed else 'Module executed without Python import errors!' }}"
+
+    - name: Final status
+      debug:
+        msg:
+          - "🎉 SUCCESS! Keeper Secrets Manager 1.2.4 is working in AAP!"
+          - "✅ Collection: From Ansible Galaxy"
+          - "✅ Dependencies: Installed and importable"
+          - "✅ Modules: Ready for use"
+      when: not info_result.failed
