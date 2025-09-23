@@ -1,0 +1,41 @@
+---
+- name: Test Keeper Collection with Runtime Installation
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Check what's currently installed
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: before_install
+      failed_when: false
+
+    - name: Show before installation
+      debug:
+        var: before_install
+
+    - name: Install from uploaded collection (this should work with official Keeper EE)
+      shell: ansible-galaxy collection install keepersecurity.keeper_secrets_manager --force
+      register: install_result
+      failed_when: false
+
+    - name: Show install result
+      debug:
+        var: install_result
+
+    - name: Verify installation
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: after_install
+
+    - name: Show after installation
+      debug:
+        var: after_install
+
+    - name: Now test the keeper_info module
+      keepersecurity.keeper_secrets_manager.keeper_info:
+      register: keeper_test
+      failed_when: false
+
+    - name: Show keeper test result
+      debug:
+        var: keeper_test
