@@ -1,6 +1,6 @@
 ---
 - name: Playbook One
-  hosts: local
+  hosts: all
   collections:
     - keepersecurity.keeper_secrets_manager
   tasks:
