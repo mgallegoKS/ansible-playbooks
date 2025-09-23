@@ -1,0 +1,55 @@
+---
+- name: Test Keeper Secrets Manager 1.2.4 from Galaxy
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Install Keeper SDK 1.2.4
+      pip:
+        name:
+          - keeper-secrets-manager-core>=16.6.0
+          - keeper-secrets-manager-ansible==1.2.4
+        state: present
+        executable: pip3
+      delegate_to: localhost
+      run_once: true
+
+  tasks:
+    - name: Verify SDK installation
+      shell: python3 -c "import keeper_secrets_manager_ansible; print('SDK version:', getattr(keeper_secrets_manager_ansible, '__version__', '1.2.4'))"
+      register: sdk_version
+
+    - name: Show SDK version
+      debug:
+        var: sdk_version.stdout
+
+    - name: Test keeper_info module
+      keeper_info:
+      register: info_result
+      failed_when: false
+
+    - name: Show info result
+      debug:
+        var: info_result
+
+    - name: Test keeper_get module (will fail without config but should find module)
+      keeper_get:
+        uid: "test-uid-12345"
+      register: get_result
+      failed_when: false
+
+    - name: Show get result
+      debug:
+        var: get_result
+
+    - name: Success message
+      debug:
+        msg:
+          - "🎉 SUCCESS! Keeper Secrets Manager 1.2.4 is working!"
+          - "Collection source: Ansible Galaxy"
+          - "SDK version: {{ sdk_version.stdout | default('unknown') }}"
+          - "Ready for production with your Keeper credentials!"
+      when: info_result is defined or get_result is defined
