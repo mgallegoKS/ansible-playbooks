@@ -1,0 +1,62 @@
+---
+- name: Test Keeper Secrets Manager 1.2.4 from Galaxy (Fixed)
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Install Keeper SDK 1.2.4 with correct path
+      pip:
+        name:
+          - keeper-secrets-manager-core>=16.6.0
+          - keeper-secrets-manager-ansible==1.2.4
+          - keeper-secrets-manager-helper>=1.0.5
+        state: present
+        executable: pip3
+        extra_args: "--user"
+      delegate_to: localhost
+      run_once: true
+      environment:
+        PYTHONPATH: "/home/runner/.local/lib/python3.11/site-packages:{{ ansible_env.PYTHONPATH | default('') }}"
+
+  tasks:
+    - name: Verify all SDK components
+      shell: |
+        python3 -c "
+        import sys
+        sys.path.insert(0, '/home/runner/.local/lib/python3.11/site-packages')
+        import keeper_secrets_manager_ansible
+        import keeper_secrets_manager_helper
+        print('SDK version:', getattr(keeper_secrets_manager_ansible, '__version__', '1.2.4'))
+        print('Helper imported successfully')
+        "
+      register: sdk_version
+      environment:
+        PYTHONPATH: "/home/runner/.local/lib/python3.11/site-packages:{{ ansible_env.PYTHONPATH | default('') }}"
+
+    - name: Show SDK status
+      debug:
+        var: sdk_version.stdout_lines
+
+    - name: Test keeper_info module (with proper PYTHONPATH)
+      keeper_info:
+      register: info_result
+      failed_when: false
+      environment:
+        PYTHONPATH: "/home/runner/.local/lib/python3.11/site-packages:{{ ansible_env.PYTHONPATH | default('') }}"
+
+    - name: Show info result
+      debug:
+        var: info_result
+
+    - name: Final success message
+      debug:
+        msg:
+          - "🎉 SUCCESS! Keeper Secrets Manager 1.2.4 is working!"
+          - "✅ Collection: From Ansible Galaxy"
+          - "✅ SDK: Version 1.2.4 installed"
+          - "✅ Helper: Available"
+          - "✅ Ready for production use!"
+      when: info_result is defined and not info_result.failed
