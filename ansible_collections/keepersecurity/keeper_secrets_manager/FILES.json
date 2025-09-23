@@ -1,0 +1,376 @@
+{
+ "files": [
+  {
+   "name": ".",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "plugins",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "plugins/lookup",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "plugins/lookup/__init__.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "format": 1
+  },
+  {
+   "name": "plugins/lookup/keeper.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e529009550463d3804914572e003f08f846ab846738430a86e8c94c330392267",
+   "format": 1
+  },
+  {
+   "name": "plugins/action",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_create.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e2457a7c908dc29f522f8d0f40defadbfc2c5c303891069cd473f8cdb56f6549",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_cleanup.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "dd65544f3c10bd1931223f1211cb56bbbcccac2f4f782d159c165acd200d843c",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/__init__.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_remove.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "8610ce52da6e6c144b27ee35cd0df0b5c18109c6af968d9854fab62bf53cd4ee",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_copy.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "782f4d08399489fed902382d17dca9a7a0aca594940820edb451345699f0c8bd",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_cache_records.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "ad6a6dcc2a77de7e719a562f6c1d9ce3187a97ff5a756232fb9e8a3f84c83530",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_get_record.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "2178275de4a97967463e86e3872179fa40b46c92a145a5e2ece1547e00e04712",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_password.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "b4e509c7e9f839952c17518402f94d4f1208f23be39cf76953b5b21fa6ab0402",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_set.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "9363964e17f1b64692b55c61bbdff260da973d5e4224ea1b0f9bd0547d22e6e1",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_init.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "a71e73ecb0d4018bf4f8c55bf42af8fb05c8039a6235a6f9d4a2f85dea82361b",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_info.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "298c142e95a616431b441443205a01ef6c3f01f9617d2c50c68a00171161a9ce",
+   "format": 1
+  },
+  {
+   "name": "plugins/action/keeper_get.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "1c13a1212f8f703bb2426315aa0a57236da926977cc2d526d43afaf4219fa1eb",
+   "format": 1
+  },
+  {
+   "name": "plugins/callback",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "plugins/callback/__init__.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "format": 1
+  },
+  {
+   "name": "plugins/callback/keeper_redact.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "ee2b97e977b9d7aa8d96ebc64cad4927eda1b0e30ee3740fcda6403ca98152c1",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_create.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "47aa9445425e01f79ae94b8116f0b487b8389ed2f20e9bfc0e8620f2f907d63c",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_cleanup.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "5af37f71b7a3b7f9abf58382d30ff1a3531800a0113d01d0649caeecab0bf746",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/__init__.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_remove.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "5e7cafe1b6f66e6436cf4795aaff4bda1ea617f644d2d621adad3a9e3f487454",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_copy.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "7d5efb77c39d929e20c650150da99d871bbb9839c60c8af8a650d3c5ec0e14b3",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_cache_records.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "5ce50462d2c186f904246633c221aac194d1d7065a0be2a4930bebde30216d13",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_get_record.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "c55c4522828093786e55073710feddc53f736f1accd357f095f6a9de4edc52b5",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_password.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "df3da2e4e7b98846710afa6c7b10b16d9da66087e566f7fd2482c0c62aea4a6e",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_set.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "3e24306e7b1726102405c03786acb87c1dbe04235cb19f8ed548e287a9b34f9c",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_init.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "22e1ade72f3a0b389ce354a146ff619f68c83bf3610a2f31f177e82146166c99",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_info.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "95efad7c026955b7bd492e5ab862da1012a5e69b4531e04ffaaec5312dda3006",
+   "format": 1
+  },
+  {
+   "name": "plugins/modules/keeper_get.py",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "ce5dbf40a058d208247b710ed247c4682c59b5e87d7cd81291c43cebb43dd722",
+   "format": 1
+  },
+  {
+   "name": "meta",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "meta/runtime.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "1c866c852c9b379c4494fb1431f14a9e774c7c82f8f0046e541ccdab8c441514",
+   "format": 1
+  },
+  {
+   "name": "roles",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/vars",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/vars/main.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "4921516f5b8e4732c237640bdb682597a4a862feacfd7622929cf17424a84b97",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/tasks",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/tasks/main.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "50bc9147efd56302cd0d3d7f30233092d44af1e1bd7d4200f80e5c1bdb893a37",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/tests",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/tests/test.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "f3dff1ccb46ac72c9a502eab8b715ab2b2666d41fcdeb44a22e509838321b523",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/tests/inventory",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "e02233819b1a09844410549191813f7cc7ba360f21298578f4ba1727a27d87fc",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/meta",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/meta/main.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "9b6eefe06d902ee29993ef2227bedfee01bf06102650b4424d7ee8413729b487",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/README.md",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "320bed9f5e67e85c74418db58b5a999b4895975f15a88b820a32eb2709ed4e2a",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/defaults",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/defaults/main.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "9ec165cbc6b5c62a281c49b00df0c0e6d4f5a126473116b1d904efe7c6474770",
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/handlers",
+   "ftype": "dir",
+   "chksum_type": null,
+   "chksum_sha256": null,
+   "format": 1
+  },
+  {
+   "name": "roles/keeper_init_token/handlers/main.yml",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "a44ae0d3946fda3f9945f95facbb9f0e1fb81192de6f302939e80392aaacf4c3",
+   "format": 1
+  },
+  {
+   "name": "README.md",
+   "ftype": "file",
+   "chksum_type": "sha256",
+   "chksum_sha256": "3d8f6fda3d54c0b9163e1a9e34ee9d2f8ef91046515e26787390970aef2adb15",
+   "format": 1
+  }
+ ],
+ "format": 1
+}

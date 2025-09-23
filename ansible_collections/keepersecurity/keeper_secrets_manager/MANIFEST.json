@@ -1,0 +1,34 @@
+{
+ "collection_info": {
+  "namespace": "keepersecurity",
+  "name": "keeper_secrets_manager",
+  "version": "1.2.5",
+  "authors": [
+   "John Walstra <jwalstra@keepersecurity.com>"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "secret",
+   "password",
+   "vault"
+  ],
+  "description": "Retrieve secrets from your Keeper Vault.",
+  "license": [
+   "MIT"
+  ],
+  "license_file": null,
+  "dependencies": {},
+  "repository": "https://github.com/Keeper-Security/secrets-manager",
+  "documentation": "https://docs.keeper.io/secrets-manager/secrets-manager/integrations/ansible-plugin",
+  "homepage": "https://www.keepersecurity.com",
+  "issues": "https://github.com/Keeper-Security/secrets-manager/issues"
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "3145ad31bffb7e0237eec0f0e5222b793093e34fa50bd9b8b15ec319e472c972",
+  "format": 1
+ },
+ "format": 1
+}

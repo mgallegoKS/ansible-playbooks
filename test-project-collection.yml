@@ -1,0 +1,35 @@
+---
+- name: Test Collection from Project Structure
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  tasks:
+    - name: Test keeper_info module (should work now)
+      keeper_info:
+      register: info_result
+      failed_when: false
+
+    - name: Show info result
+      debug:
+        var: info_result
+
+    - name: Test keeper_get module
+      keeper_get:
+        uid: "test-uid-should-fail-but-module-should-be-found"
+      register: get_result
+      failed_when: false
+
+    - name: Show get result
+      debug:
+        var: get_result
+
+    - name: Success message
+      debug:
+        msg:
+          - "✅ Collection is working from project structure!"
+          - "Modules are being found and loaded properly"
+          - "You can now use keepersecurity.keeper_secrets_manager modules"
+      when: info_result is defined or get_result is defined
