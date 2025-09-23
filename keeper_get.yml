@@ -1,4 +1,6 @@
-- hosts: all
+---
+- name: Playbook One
+  hosts: all
   collections:
     - keepersecurity.keeper_secrets_manager
   tasks:
