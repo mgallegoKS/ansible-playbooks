@@ -1,0 +1,32 @@
+---
+- name: Test with Official Keeper EE + Updated Collection
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Check collection version
+      shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
+      register: version_check
+
+    - name: Show current collection version
+      debug:
+        var: version_check.stdout_lines
+
+    - name: Try to upgrade collection
+      shell: ansible-galaxy collection install keepersecurity.keeper_secrets_manager --force --upgrade
+      register: upgrade_result
+      failed_when: false
+
+    - name: Show upgrade result
+      debug:
+        var: upgrade_result
+
+    - name: Test keeper_info module
+      keepersecurity.keeper_secrets_manager.keeper_info:
+      register: info_result
+      failed_when: false
+
+    - name: Show info result
+      debug:
+        var: info_result

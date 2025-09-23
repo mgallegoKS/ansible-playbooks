@@ -1,0 +1,5 @@
+---
+collections:
+  # This will force AAP to install your specific version over the old one
+  - name: keepersecurity.keeper_secrets_manager
+    version: ">=1.2.5"

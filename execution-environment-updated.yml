@@ -1,0 +1,17 @@
+---
+version: 3
+
+images:
+  base_image:
+    name: 'keeper/keeper-secrets-manager-tower-ee:latest'
+
+dependencies:
+  galaxy: requirements-updated.yml
+
+additional_build_steps:
+  prepend_final:
+    - RUN ansible-galaxy collection install --force /tmp/keepersecurity-keeper_secrets_manager-1.2.5.tar.gz
+
+  append_final:
+    - COPY keepersecurity-keeper_secrets_manager-1.2.5.tar.gz /tmp/
+    - RUN ansible-galaxy collection install --force /tmp/keepersecurity-keeper_secrets_manager-1.2.5.tar.gz
