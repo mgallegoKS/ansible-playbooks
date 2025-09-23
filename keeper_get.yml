@@ -2,8 +2,13 @@
   collections:
     - keepersecurity.keeper_secrets_manager
   tasks:
-    - name: Get secret
-      keeper_secrets_manager_core:
-        keeper_config: "{{ keeper_config_base64 }}"
-        records:
-          - uid: "{{ record_uid }}"
+    - name: Get login name. Loading record from Keeper Vault.
+      keeper_get:
+        uid: wIBWwdDu-T3G4f4PKP2IZQ
+        field: login
+      register: my_login
+      
+    - name: Print login name
+      debug:
+        var: my_login.value
+        verbosity: 0
