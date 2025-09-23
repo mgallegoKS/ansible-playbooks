@@ -1,9 +1,9 @@
 ---
 - name: Test Runtime Collection Installation
-  hosts: localhost
+  hosts: local
   gather_facts: false
 
-  tasks:
+  tasks:  
     - name: Check current collection status
       shell: ansible-galaxy collection list keepersecurity.keeper_secrets_manager
       register: initial_check
