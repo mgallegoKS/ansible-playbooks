@@ -1,4 +1,4 @@
-- hosts: localhost
+- hosts: all
   collections:
     - keepersecurity.keeper_secrets_manager
   tasks:
