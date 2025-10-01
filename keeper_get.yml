@@ -6,7 +6,7 @@
   tasks:
     - name: Get login name. Loading record from Keeper Vault.
       keeper_get:
-        uid: wIBWwdDu-T3G4f4PKP2IZQ
+        uid: WoR0L0QyRc6TLAXeybnT7w
         field: login
       register: my_login
       

@@ -1,4 +1,0 @@
----
-collections:
-  - name: keepersecurity.keeper_secrets_manager
-    source: ./keepersecurity-keeper_secrets_manager-1.2.5.tar.gz
