@@ -1,0 +1,51 @@
+---
+- name: Find and Install Keeper SDK 1.2.5
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Check for SDK tarball in project
+      find:
+        paths: "/runner/project"
+        patterns: "*keeper*sdk*.tar.gz,*keeper*secrets*manager*ansible*.tar.gz"
+        recurse: yes
+      register: sdk_tarball
+
+    - name: Show found SDK files
+      debug:
+        var: sdk_tarball
+
+    - name: Install keeper-secrets-manager-core first
+      pip:
+        name: keeper-secrets-manager-core>=16.6.0
+        state: present
+        executable: pip3
+
+    - name: Try installing from git (if available)
+      pip:
+        name: "git+https://github.com/Keeper-Security/secrets-manager@master#subdirectory=sdk/python/ansible"
+        state: present
+        executable: pip3
+      register: git_install
+      failed_when: false
+
+    - name: Show git install result
+      debug:
+        var: git_install
+
+    - name: Install specific version if git worked
+      pip:
+        name: keeper-secrets-manager-ansible==1.2.4
+        state: present
+        executable: pip3
+      when: git_install.failed is false
+
+    - name: Verify final installation
+      shell: python3 -c "import keeper_secrets_manager_ansible; print('SDK version:', getattr(keeper_secrets_manager_ansible, '__version__', 'unknown'))"
+      register: final_check
+      failed_when: false
+
+    - name: Show final status
+      debug:
+        var: final_check

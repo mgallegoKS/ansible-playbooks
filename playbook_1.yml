@@ -1,0 +1,21 @@
+---
+- name: Playbook One
+  hosts: all
+  collections: 
+    - keepersecurity.keeper_secrets_manager
+
+  tasks:
+    - name: "Make User SSH Directory, if does not exists"
+      file:
+        path: "/home/user/.ssh"
+        state: directory
+        recurse: yes
+
+    - name: "Copy SSH Keys"
+      keeper_copy:
+        notation: "VWicPYiC488LxFWimT-QDA/field/keyPair[{{ item.notation_key }}]"
+        dest: "/home/user/.ssh/{{ item.filename }}"
+        mode: "0600"
+      loop:
+        - { notation_key: "privateKey", filename: "id_rsa" }
+        - { notation_key: "publicKey",  filename: "id_rsa.pub" }

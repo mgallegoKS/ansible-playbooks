@@ -1,0 +1,16 @@
+---
+version: 3
+
+images:
+  base_image:
+    name: 'quay.io/ansible/automation-platform-execution-environment:latest'
+
+dependencies:
+  python: ee-requirements.txt
+  system: ee-bindep.txt
+
+additional_build_steps:
+  prepend_final:
+    - RUN pip install --upgrade pip
+  append_final:
+    - RUN ansible-galaxy collection list

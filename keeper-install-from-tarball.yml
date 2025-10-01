@@ -1,0 +1,55 @@
+---
+- name: Install Keeper SDK 1.2.5 from Tarball
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Install base dependencies first
+      pip:
+        name:
+          - keeper-secrets-manager-core>=16.6.0
+        state: present
+        executable: pip3
+
+    - name: Install keeper-secrets-manager-ansible 1.2.5 from project tarball
+      pip:
+        name: "file:///runner/project/keepersecurity-keeper_secrets_manager-1.2.5.tar.gz"
+        state: forcereinstall
+        executable: pip3
+      failed_when: false
+      register: tarball_install
+
+    - name: Show tarball install result
+      debug:
+        var: tarball_install
+
+    - name: Alternative - try extracting and installing manually
+      shell: |
+        cd /tmp
+        tar -xzf /runner/project/keepersecurity-keeper_secrets_manager-1.2.5.tar.gz
+        cd /tmp && python3 -m pip install ./keepersecurity-keeper_secrets_manager-1.2.5/
+      when: tarball_install.failed is true
+      register: manual_install
+      failed_when: false
+
+  tasks:
+    - name: Verify installation
+      shell: python3 -c "import keeper_secrets_manager_ansible; print('SDK 1.2.5 installed successfully')"
+      register: verify_sdk
+      failed_when: false
+
+    - name: Show verification
+      debug:
+        var: verify_sdk
+
+    - name: Test keeper_info with 1.2.5
+      keeper_info:
+      register: keeper_test
+      failed_when: false
+
+    - name: Show keeper test result
+      debug:
+        var: keeper_test

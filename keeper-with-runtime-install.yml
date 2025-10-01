@@ -1,0 +1,35 @@
+---
+- name: Keeper Playbook with Runtime SDK Installation
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  tasks:
+    - name: Install Keeper SDK at runtime
+      pip:
+        name:
+          - keeper-secrets-manager-core>=16.6.0
+          - keeper-secrets-manager-ansible>=1.0.0
+        state: present
+        executable: pip3
+      delegate_to: localhost
+      run_once: true
+
+    - name: Verify SDK installation
+      shell: python3 -c "import keeper_secrets_manager_ansible; print('SDK installed')"
+      register: sdk_check
+
+    - name: Show SDK status
+      debug:
+        var: sdk_check.stdout
+
+    - name: Now use Keeper modules
+      keeper_info:
+      register: info_result
+      failed_when: false
+
+    - name: Show keeper info result
+      debug:
+        var: info_result

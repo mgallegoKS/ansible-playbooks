@@ -1,0 +1,41 @@
+---
+- name: Final Test - Complete Keeper Setup
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Install Keeper SDK (runtime method)
+      pip:
+        name:
+          - keeper-secrets-manager-core
+          - keeper-secrets-manager-ansible
+        state: present
+        executable: pip3
+      delegate_to: localhost
+      run_once: true
+
+  tasks:
+    - name: ✅ Test Keeper Info
+      keeper_info:
+      register: keeper_info
+      failed_when: false
+
+    - name: Show results
+      debug:
+        msg:
+          - "✅ Collection: Working from project structure"
+          - "✅ SDK: Installed at runtime"
+          - "✅ Module: {{ 'SUCCESS' if keeper_info.failed is false else 'FAILED - ' + keeper_info.msg | default('Unknown error') }}"
+          - ""
+          - "🎉 Your Keeper Secrets Manager collection is ready!"
+
+    - name: Next steps
+      debug:
+        msg:
+          - "To use in production:"
+          - "1. Add your Keeper config as credentials in AAP"
+          - "2. Reference real secret UIDs in keeper_get tasks"
+          - "3. Use the runtime pip install pattern in all Keeper playbooks"

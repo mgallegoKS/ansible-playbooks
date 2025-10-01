@@ -1,0 +1,54 @@
+---
+- name: Extract and Install Keeper SDK from Collection
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Install base keeper-secrets-manager-core
+      pip:
+        name: keeper-secrets-manager-core>=16.6.0
+        state: present
+        executable: pip3
+
+    - name: Check if collection has Python SDK files
+      find:
+        paths: "/runner/project/ansible_collections/keepersecurity/keeper_secrets_manager"
+        patterns: "*.py"
+        recurse: yes
+      register: python_files
+
+    - name: Show found Python files
+      debug:
+        msg: "Found {{ python_files.files | length }} Python files in collection"
+
+    - name: Create temporary Python package structure
+      shell: |
+        mkdir -p /tmp/keeper_secrets_manager_ansible
+        cp -r /runner/project/ansible_collections/keepersecurity/keeper_secrets_manager/plugins/* /tmp/keeper_secrets_manager_ansible/ 2>/dev/null || true
+        echo "from . import *" > /tmp/keeper_secrets_manager_ansible/__init__.py
+      register: create_package
+      failed_when: false
+
+    - name: Add to Python path
+      shell: |
+        export PYTHONPATH="/tmp:$PYTHONPATH"
+        python3 -c "import sys; sys.path.insert(0, '/tmp'); import keeper_secrets_manager_ansible; print('Package created successfully')"
+      register: python_path_test
+      failed_when: false
+      environment:
+        PYTHONPATH: "/tmp:{{ ansible_env.PYTHONPATH | default('') }}"
+
+  tasks:
+    - name: Test keeper_info with custom Python path
+      keeper_info:
+      register: keeper_test
+      failed_when: false
+      environment:
+        PYTHONPATH: "/tmp:{{ ansible_env.PYTHONPATH | default('') }}"
+
+    - name: Show test result
+      debug:
+        var: keeper_test
