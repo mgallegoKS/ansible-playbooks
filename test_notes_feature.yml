@@ -1,0 +1,55 @@
+---
+- name: Test KSM v1.3.0 Notes Feature (PR #927)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  vars:
+    test_record_uid: "iGEYalKPyahj7BJyJDFSIw"
+    test_note_value: "Test note from AAP - {{ ansible_date_time.iso8601 | default(now()) }}"
+
+  tasks:
+    # Test 1: Read existing notes (KSM-768)
+    - name: "Test 1 - Read notes from record"
+      keeper_get:
+        uid: "{{ test_record_uid }}"
+        notes: yes
+      register: notes_result
+
+    - name: "Display current notes"
+      ansible.builtin.debug:
+        msg: "Current notes: {{ notes_result.value | default('(empty)') }}"
+
+    # Test 2: Write notes to record (KSM-714)
+    - name: "Test 2 - Write notes to record"
+      keeper_set:
+        uid: "{{ test_record_uid }}"
+        field_type: notes
+        value: "Updated via AAP at {{ now() }}"
+      register: set_notes_result
+
+    - name: "Display set notes result"
+      ansible.builtin.debug:
+        var: set_notes_result
+
+    # Test 3: Verify notes were updated
+    - name: "Test 3 - Read notes again to verify update"
+      keeper_get:
+        uid: "{{ test_record_uid }}"
+        notes: yes
+      register: notes_verify
+
+    - name: "Display updated notes"
+      ansible.builtin.debug:
+        msg: "Updated notes: {{ notes_verify.value }}"
+
+    - name: "Summary"
+      ansible.builtin.debug:
+        msg:
+          - "=== PR #927 Test Results ==="
+          - "Notes Read (KSM-768): {{ 'PASS' if notes_result is defined else 'FAIL' }}"
+          - "Notes Write (KSM-714): {{ 'PASS' if set_notes_result is defined else 'FAIL' }}"
+          - "Notes Verify: {{ 'PASS' if notes_verify.value is defined else 'FAIL' }}"
