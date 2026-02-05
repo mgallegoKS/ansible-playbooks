@@ -8,11 +8,11 @@
     - keepersecurity.keeper_secrets_manager
 
   tasks:
-    - name: Debug - Check if KSM environment variables are set
+    - name: Debug - Check if keeper_config variable is set
       ansible.builtin.debug:
         msg:
-          - "KSM_CONFIG is {{ 'SET' if lookup('env', 'KSM_CONFIG') else 'NOT SET' }}"
-          - "KSM_CONFIG_BASE64 is {{ 'SET' if lookup('env', 'KSM_CONFIG_BASE64') else 'NOT SET' }}"
+          - "keeper_config is {{ 'SET' if keeper_config is defined else 'NOT SET' }}"
+          - "keeper_config value: {{ keeper_config | default('UNDEFINED') }}"
 
     - name: Retrieve a secret from Keeper
       keepersecurity.keeper_secrets_manager.keeper_get:
