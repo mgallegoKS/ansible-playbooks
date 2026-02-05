@@ -32,7 +32,7 @@
     - name: "Step 2 - Read notes from record (KSM-768)"
       keeper_get:
         uid: "{{ created_record.record_uid }}"
-        notes: yes
+        notes: "notes"
       register: notes_read
 
     - name: "Display read notes"
@@ -62,7 +62,7 @@
     - name: "Step 4 - Read notes again to verify update"
       keeper_get:
         uid: "{{ created_record.record_uid }}"
-        notes: yes
+        notes: "notes"
       register: notes_verify
 
     - name: "Verify updated notes match"
