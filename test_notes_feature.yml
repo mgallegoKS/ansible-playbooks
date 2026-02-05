@@ -8,7 +8,7 @@
     - keepersecurity.keeper_secrets_manager
 
   vars:
-    shared_folder_uid: "bRPjVkhKvEjL95Lp-ForNA"
+    shared_folder_uid: "2tIWb_eg35_E75I7wTOtkQ"
     initial_notes: "Initial notes created by AAP test"
     updated_notes: "Updated notes via keeper_set - PR #927 test"
 
