@@ -4,9 +4,12 @@
   connection: local
   gather_facts: false
 
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
   tasks:
     - name: Retrieve a secret from Keeper
-      keeper_secrets_manager.keeper_secrets_manager.keeper_get:
+      keepersecurity.keeper_secrets_manager.keeper_get:
         uid: "iGEYalKPyahj7BJyJDFSIw"
       register: ksm_secret
 
