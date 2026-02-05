@@ -8,17 +8,12 @@
     - keepersecurity.keeper_secrets_manager
 
   tasks:
-    - name: Debug - Check if keeper_config variable is set
-      ansible.builtin.debug:
-        msg:
-          - "keeper_config is {{ 'SET' if keeper_config is defined else 'NOT SET' }}"
-          - "keeper_config value: {{ keeper_config | default('UNDEFINED') }}"
-
     - name: Retrieve a secret from Keeper
-      keepersecurity.keeper_secrets_manager.keeper_get:
+      keeper_get:
         uid: "iGEYalKPyahj7BJyJDFSIw"
+        field: login
       register: ksm_secret
 
-    - name: Display secret title (safe to show)
+    - name: Display retrieved value
       ansible.builtin.debug:
-        msg: "Successfully retrieved secret: {{ ksm_secret.record.title }}"
+        msg: "Successfully retrieved login: {{ ksm_secret.value }}"
