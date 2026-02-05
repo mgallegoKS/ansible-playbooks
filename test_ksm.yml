@@ -1,0 +1,16 @@
+---
+  - name: Test Keeper Secrets Manager
+    hosts: localhost
+    connection: local
+    gather_facts: false
+
+    tasks:
+      - name: Retrieve a secret from Keeper
+        keeper_secrets_manager.keeper_secrets_manager.keeper_get:
+          uid: "iGEYalKPyahj7BJyJDFSIw"
+        register: ksm_secret
+
+      - name: Display secret title (safe to show)
+        ansible.builtin.debug:
+          msg: "Successfully retrieved secret: {{ ksm_secret.record.title }}"
+---
