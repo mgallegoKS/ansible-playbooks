@@ -8,48 +8,78 @@
     - keepersecurity.keeper_secrets_manager
 
   vars:
-    test_record_uid: "iGEYalKPyahj7BJyJDFSIw"
-    test_note_value: "Test note from AAP - {{ ansible_date_time.iso8601 | default(now()) }}"
+    shared_folder_uid: "bRPjVkhKvEjL95Lp-ForNA"
+    initial_notes: "Initial notes created by AAP test"
+    updated_notes: "Updated notes via keeper_set - PR #927 test"
 
   tasks:
-    # Test 1: Read existing notes (KSM-768)
-    - name: "Test 1 - Read notes from record"
+    # Step 1: Create a new record with notes
+    - name: "Step 1 - Create test record with notes"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "PR927 Test Record - {{ now(fmt='%Y%m%d_%H%M%S') }}"
+        login: "test_user"
+        password: "test_password_123"
+        notes: "{{ initial_notes }}"
+      register: created_record
+
+    - name: "Display created record UID"
+      ansible.builtin.debug:
+        msg: "Created record UID: {{ created_record.uid }}"
+
+    # Step 2: Read notes from the created record (KSM-768)
+    - name: "Step 2 - Read notes from record (KSM-768)"
       keeper_get:
-        uid: "{{ test_record_uid }}"
+        uid: "{{ created_record.uid }}"
         notes: yes
-      register: notes_result
+      register: notes_read
 
-    - name: "Display current notes"
+    - name: "Display read notes"
       ansible.builtin.debug:
-        msg: "Current notes: {{ notes_result.value | default('(empty)') }}"
+        msg: "Notes read: {{ notes_read.value }}"
 
-    # Test 2: Write notes to record (KSM-714)
-    - name: "Test 2 - Write notes to record"
+    - name: "Verify initial notes match"
+      ansible.builtin.assert:
+        that:
+          - notes_read.value == initial_notes
+        fail_msg: "Notes read do not match initial notes!"
+        success_msg: "KSM-768 PASS: Notes read successfully"
+
+    # Step 3: Update notes using keeper_set (KSM-714)
+    - name: "Step 3 - Update notes using keeper_set (KSM-714)"
       keeper_set:
-        uid: "{{ test_record_uid }}"
+        uid: "{{ created_record.uid }}"
         field_type: notes
-        value: "Updated via AAP at {{ now() }}"
-      register: set_notes_result
+        value: "{{ updated_notes }}"
+      register: notes_set
 
-    - name: "Display set notes result"
+    - name: "Display set result"
       ansible.builtin.debug:
-        var: set_notes_result
+        var: notes_set
 
-    # Test 3: Verify notes were updated
-    - name: "Test 3 - Read notes again to verify update"
+    # Step 4: Verify notes were updated
+    - name: "Step 4 - Read notes again to verify update"
       keeper_get:
-        uid: "{{ test_record_uid }}"
+        uid: "{{ created_record.uid }}"
         notes: yes
       register: notes_verify
 
-    - name: "Display updated notes"
-      ansible.builtin.debug:
-        msg: "Updated notes: {{ notes_verify.value }}"
+    - name: "Verify updated notes match"
+      ansible.builtin.assert:
+        that:
+          - notes_verify.value == updated_notes
+        fail_msg: "Updated notes do not match!"
+        success_msg: "KSM-714 PASS: Notes updated successfully"
 
-    - name: "Summary"
+    # Summary
+    - name: "Test Summary"
       ansible.builtin.debug:
         msg:
-          - "=== PR #927 Test Results ==="
-          - "Notes Read (KSM-768): {{ 'PASS' if notes_result is defined else 'FAIL' }}"
-          - "Notes Write (KSM-714): {{ 'PASS' if set_notes_result is defined else 'FAIL' }}"
-          - "Notes Verify: {{ 'PASS' if notes_verify.value is defined else 'FAIL' }}"
+          - "=========================================="
+          - "PR #927 Test Results - Notes Feature"
+          - "=========================================="
+          - "Record UID: {{ created_record.uid }}"
+          - "KSM-768 (Read Notes):  PASS"
+          - "KSM-714 (Write Notes): PASS"
+          - "=========================================="
