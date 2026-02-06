@@ -10,7 +10,7 @@
   tasks:
     - name: Retrieve a secret from Keeper
       keeper_get:
-        uid: "iGEYalKPyahj7BJyJDFSIw"
+        uid: "a4lQApnFaNzy1Qcw34eYXw"
         field: login
       register: ksm_secret
 
