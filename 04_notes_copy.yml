@@ -14,12 +14,13 @@
     output_dir: "/tmp/ksm_notes_test"
 
   pre_tasks:
-    - name: Check if record UIDs are available
+    - name: Check if record UIDs and test ID are available
       ansible.builtin.assert:
         that:
           - notes_record_uid is defined
-        fail_msg: "Record UIDs not provided. Run as part of the AAP workflow or pass UIDs as extra vars."
-        success_msg: "Notes test record UIDs loaded successfully"
+          - test_id is defined
+        fail_msg: "Record UIDs or test_id not provided. Run as part of the AAP workflow or pass them as extra vars."
+        success_msg: "Notes test record UIDs and test ID ({{ test_id }}) loaded successfully"
 
     - name: Ensure output directory exists
       ansible.builtin.file:
@@ -89,7 +90,7 @@
     # Test 4.4: Copy notes by title
     - name: "Test 4.4 - Copy notes by title"
       keeper_copy:
-        title: "[KSM-772] Notes Test - Special Chars"
+        title: "[KSM-772] Notes Test - Special Chars {{ test_id }}"
         notes: yes
         dest: "{{ output_dir }}/notes_by_title.txt"
       register: copy_notes_by_title

@@ -10,12 +10,13 @@
     - keepersecurity.keeper_secrets_manager
 
   pre_tasks:
-    - name: Check if record UIDs are available
+    - name: Check if record UIDs and test ID are available
       ansible.builtin.assert:
         that:
           - notes_record_uid is defined
-        fail_msg: "Record UIDs not provided. Run as part of the AAP workflow or pass UIDs as extra vars."
-        success_msg: "Notes test record UIDs loaded successfully"
+          - test_id is defined
+        fail_msg: "Record UIDs or test_id not provided. Run as part of the AAP workflow or pass them as extra vars."
+        success_msg: "Notes test record UIDs and test ID ({{ test_id }}) loaded successfully"
 
   tasks:
     - name: Display test header
@@ -44,7 +45,7 @@
     # Test 2.2: Get notes by title - happy path
     - name: "Test 2.2 - Get notes by title (happy path)"
       keeper_get:
-        title: "[KSM-772] Notes Test - With Notes"
+        title: "[KSM-772] Notes Test - With Notes {{ test_id }}"
         notes: yes
       register: get_notes_by_title
 

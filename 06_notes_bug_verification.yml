@@ -15,6 +15,10 @@
     output_dir: "/tmp/ksm_notes_test"
 
   tasks:
+    - name: Generate unique test ID
+      ansible.builtin.set_fact:
+        test_id: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+
     - name: Display test header
       ansible.builtin.debug:
         msg: |
@@ -57,7 +61,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - No Notes"
+        title: "[KSM-772] Bug Verify - No Notes {{ test_id }}"
         fields:
           - type: login
             value: "bug_verify_no_notes"
@@ -69,7 +73,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - Empty String Notes"
+        title: "[KSM-772] Bug Verify - Empty String Notes {{ test_id }}"
         fields:
           - type: login
             value: "bug_verify_empty_notes"
@@ -82,7 +86,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - With Notes"
+        title: "[KSM-772] Bug Verify - With Notes {{ test_id }}"
         fields:
           - type: login
             value: "bug_verify_with_notes"
@@ -288,7 +292,7 @@
     # KSM-771 Test 4: Copy notes by title
     - name: "KSM-771.4 - Copy notes by title"
       keeper_copy:
-        title: "[KSM-772] Bug Verify - With Notes"
+        title: "[KSM-772] Bug Verify - With Notes {{ test_id }}"
         notes: yes
         dest: "{{ output_dir }}/ksm771_title.txt"
       register: ksm771_title_result
@@ -409,7 +413,7 @@
     # KSM-772 Test 4: Set notes by title
     - name: "KSM-772.4 - Set notes by title"
       keeper_set:
-        title: "[KSM-772] Bug Verify - Empty String Notes"
+        title: "[KSM-772] Bug Verify - Empty String Notes {{ test_id }}"
         notes: yes
         value: "notes set by title"
       register: ksm772_title_set
@@ -472,7 +476,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - KSM-773 Plural Notes"
+        title: "[KSM-772] Bug Verify - KSM-773 Plural Notes {{ test_id }}"
         fields:
           - type: login
             value: "ksm773_test_user"
@@ -512,7 +516,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - KSM-773 Multiline"
+        title: "[KSM-772] Bug Verify - KSM-773 Multiline {{ test_id }}"
         fields:
           - type: login
             value: "ksm773_multiline_user"
@@ -544,7 +548,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - KSM-773 Special Chars"
+        title: "[KSM-772] Bug Verify - KSM-773 Special Chars {{ test_id }}"
         fields:
           - type: login
             value: "ksm773_special_user"
@@ -573,7 +577,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Bug Verify - KSM-773 Old Singular"
+        title: "[KSM-772] Bug Verify - KSM-773 Old Singular {{ test_id }}"
         fields:
           - type: login
             value: "ksm773_old_param_user"

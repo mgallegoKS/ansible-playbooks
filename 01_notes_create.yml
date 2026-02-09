@@ -13,16 +13,20 @@
     shared_folder_uid: "2tIWb_eg35_E75I7wTOtkQ"
 
   tasks:
+    - name: Generate unique test ID
+      ansible.builtin.set_fact:
+        test_id: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+
     - name: Display test header
       ansible.builtin.debug:
-        msg: "========== NOTES CREATE TESTS =========="
+        msg: "========== NOTES CREATE TESTS ({{ test_id }}) =========="
 
     # Test 1.1: Create login record with notes
     - name: "Test 1.1 - Create login record with notes"
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Notes Test - With Notes"
+        title: "[KSM-772] Notes Test - With Notes {{ test_id }}"
         fields:
           - type: login
             value: "notes_test_user"
@@ -46,7 +50,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Notes Test - No Notes"
+        title: "[KSM-772] Notes Test - No Notes {{ test_id }}"
         fields:
           - type: login
             value: "no_notes_user"
@@ -67,7 +71,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Notes Test - Multiline"
+        title: "[KSM-772] Notes Test - Multiline {{ test_id }}"
         fields:
           - type: login
             value: "multiline_notes_user"
@@ -92,7 +96,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Notes Test - Special Chars"
+        title: "[KSM-772] Notes Test - Special Chars {{ test_id }}"
         fields:
           - type: login
             value: "special_notes_user"
@@ -110,9 +114,10 @@
         success_msg: "SUCCESS: Special chars notes record created with UID {{ special_record.record_uid }}"
 
     # Pass record UIDs to subsequent workflow nodes via set_stats
-    - name: Pass record UIDs to workflow
+    - name: Pass record UIDs and test ID to workflow
       ansible.builtin.set_stats:
         data:
+          test_id: "{{ test_id }}"
           notes_record_uid: "{{ notes_record.record_uid }}"
           no_notes_record_uid: "{{ no_notes_record.record_uid }}"
           multiline_record_uid: "{{ multiline_record.record_uid }}"

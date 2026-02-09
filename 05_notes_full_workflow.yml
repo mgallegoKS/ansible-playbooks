@@ -14,6 +14,10 @@
     output_dir: "/tmp/ksm_notes_test"
 
   tasks:
+    - name: Generate unique test ID
+      ansible.builtin.set_fact:
+        test_id: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+
     - name: Display test header
       ansible.builtin.debug:
         msg: |
@@ -47,7 +51,7 @@
       keeper_create:
         shared_folder_uid: "{{ shared_folder_uid }}"
         record_type: login
-        title: "[KSM-772] Notes Workflow Test"
+        title: "[KSM-772] Notes Workflow Test {{ test_id }}"
         fields:
           - type: login
             value: "workflow_notes_user"
