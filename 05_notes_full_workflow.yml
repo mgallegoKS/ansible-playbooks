@@ -1,0 +1,254 @@
+---
+# 05_notes_full_workflow.yml - End-to-end notes lifecycle test
+# Complete CRUD cycle for notes: Create, Read, Update, Read Back, Copy, Verify, Delete
+# AAP: Self-contained playbook (creates and cleans up its own records)
+
+- name: Notes Full Workflow - End-to-End Notes Lifecycle Test
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  vars:
+    shared_folder_uid: "2tIWb_eg35_E75I7wTOtkQ"
+    output_dir: "/tmp/ksm_notes_test"
+
+  tasks:
+    - name: Display test header
+      ansible.builtin.debug:
+        msg: |
+          ==========================================================
+          NOTES FULL WORKFLOW - END-TO-END LIFECYCLE TEST
+          ==========================================================
+          1. CREATE  - Create record with initial notes
+          2. READ    - Get notes via keeper_get
+          3. UPDATE  - Update notes via keeper_set
+          4. READ    - Verify updated notes
+          5. COPY    - Copy notes to filesystem
+          6. VERIFY  - Assert file contents match
+          7. DELETE  - Remove test record
+          8. VERIFY  - Confirm record deleted
+          ==========================================================
+
+    - name: Ensure output directory exists
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: directory
+        mode: '0755'
+
+    # ============================================================
+    # STEP 1: CREATE
+    # ============================================================
+    - name: "STEP 1: CREATE - Create record with initial notes"
+      ansible.builtin.debug:
+        msg: ">>> Creating new record with initial notes..."
+
+    - name: Create workflow record with notes
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Notes Workflow Test"
+        fields:
+          - type: login
+            value: "workflow_notes_user"
+          - type: password
+            value: "WorkflowNotesPwd123!"
+        notes: "Initial notes - created by notes workflow test"
+      register: workflow_record
+
+    - name: Assert record was created
+      ansible.builtin.assert:
+        that:
+          - workflow_record.record_uid is defined
+          - workflow_record.record_uid | length > 0
+        fail_msg: "STEP 1 FAILED: Record was not created"
+        success_msg: "STEP 1 SUCCESS: Record created with UID {{ workflow_record.record_uid }}"
+
+    - name: Store workflow record UID
+      ansible.builtin.set_fact:
+        workflow_uid: "{{ workflow_record.record_uid }}"
+
+    # ============================================================
+    # STEP 2: READ
+    # ============================================================
+    - name: "STEP 2: READ - Get notes via keeper_get"
+      ansible.builtin.debug:
+        msg: ">>> Reading notes from created record..."
+
+    - name: Get notes from created record
+      keeper_get:
+        uid: "{{ workflow_uid }}"
+        notes: yes
+      register: read_initial_notes
+
+    - name: Display initial notes
+      ansible.builtin.debug:
+        msg: "Initial notes: {{ read_initial_notes.value }}"
+
+    - name: Assert initial notes correct
+      ansible.builtin.assert:
+        that:
+          - read_initial_notes.value is defined
+          - "'Initial notes' in read_initial_notes.value"
+        fail_msg: "STEP 2 FAILED: Initial notes not retrieved correctly"
+        success_msg: "STEP 2 SUCCESS: Initial notes verified"
+
+    # ============================================================
+    # STEP 3: UPDATE
+    # ============================================================
+    - name: "STEP 3: UPDATE - Update notes via keeper_set"
+      ansible.builtin.debug:
+        msg: ">>> Updating notes on record..."
+
+    - name: Update notes via keeper_set
+      keeper_set:
+        uid: "{{ workflow_uid }}"
+        notes: yes
+        value: "Updated notes - modified by workflow test step 3"
+      register: update_notes_result
+
+    - name: Assert update did not fail
+      ansible.builtin.assert:
+        that:
+          - update_notes_result is not failed
+        fail_msg: "STEP 3 FAILED: Notes update failed"
+        success_msg: "STEP 3 SUCCESS: Notes updated"
+
+    # ============================================================
+    # STEP 4: READ BACK
+    # ============================================================
+    - name: "STEP 4: READ BACK - Verify updated notes"
+      ansible.builtin.debug:
+        msg: ">>> Reading back updated notes..."
+
+    - name: Get updated notes
+      keeper_get:
+        uid: "{{ workflow_uid }}"
+        notes: yes
+      register: read_updated_notes
+
+    - name: Display updated notes
+      ansible.builtin.debug:
+        msg: "Updated notes: {{ read_updated_notes.value }}"
+
+    - name: Assert notes were updated correctly
+      ansible.builtin.assert:
+        that:
+          - read_updated_notes.value == "Updated notes - modified by workflow test step 3"
+        fail_msg: "STEP 4 FAILED: Updated notes don't match expected value (got '{{ read_updated_notes.value | default('None') }}')"
+        success_msg: "STEP 4 SUCCESS: Updated notes verified"
+
+    # ============================================================
+    # STEP 5: COPY
+    # ============================================================
+    - name: "STEP 5: COPY - Copy notes to filesystem"
+      ansible.builtin.debug:
+        msg: ">>> Copying notes to file..."
+
+    - name: Copy notes to file
+      keeper_copy:
+        uid: "{{ workflow_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/workflow_notes.txt"
+        mode: '0600'
+      register: copy_notes_result
+
+    - name: Assert copy succeeded
+      ansible.builtin.assert:
+        that:
+          - copy_notes_result is not failed
+        fail_msg: "STEP 5 FAILED: Notes copy to file failed"
+        success_msg: "STEP 5 SUCCESS: Notes copied to file"
+
+    # ============================================================
+    # STEP 6: VERIFY FILE
+    # ============================================================
+    - name: "STEP 6: VERIFY - Assert file contents match"
+      ansible.builtin.debug:
+        msg: ">>> Verifying file contents..."
+
+    - name: Read notes file
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/workflow_notes.txt"
+      register: notes_file
+
+    - name: Assert file contents match notes
+      ansible.builtin.assert:
+        that:
+          - "(notes_file.content | b64decode) == 'Updated notes - modified by workflow test step 3'"
+        fail_msg: "STEP 6 FAILED: File contents don't match notes"
+        success_msg: "STEP 6 SUCCESS: File contents match notes"
+
+    # ============================================================
+    # STEP 7: DELETE
+    # ============================================================
+    - name: "STEP 7: DELETE - Remove test record"
+      ansible.builtin.debug:
+        msg: ">>> Removing workflow test record..."
+
+    - name: Remove workflow record
+      keeper_remove:
+        uid: "{{ workflow_uid }}"
+      register: remove_result
+
+    - name: Assert removal was successful
+      ansible.builtin.assert:
+        that:
+          - remove_result is not failed
+        fail_msg: "STEP 7 FAILED: Record removal failed"
+        success_msg: "STEP 7 SUCCESS: Record removed"
+
+    # ============================================================
+    # STEP 8: VERIFY DELETION
+    # ============================================================
+    - name: "STEP 8: VERIFY - Confirm record deleted"
+      ansible.builtin.debug:
+        msg: ">>> Verifying record no longer exists..."
+
+    - name: Try to get deleted record
+      keeper_get:
+        uid: "{{ workflow_uid }}"
+        field: login
+      register: verify_deleted
+      ignore_errors: true
+
+    - name: Assert record no longer exists
+      ansible.builtin.assert:
+        that:
+          - verify_deleted is failed
+        fail_msg: "STEP 8 FAILED: Record still exists after deletion"
+        success_msg: "STEP 8 SUCCESS: Record confirmed deleted"
+
+    # ============================================================
+    # CLEANUP
+    # ============================================================
+    - name: Clean up test files
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: absent
+
+    # ============================================================
+    # SUMMARY
+    # ============================================================
+    - name: Display test summary
+      ansible.builtin.debug:
+        msg: |
+          ==========================================================
+          NOTES FULL WORKFLOW TEST COMPLETE
+          ==========================================================
+          All steps completed successfully:
+          [x] STEP 1: CREATE    - Record created with initial notes
+          [x] STEP 2: READ     - Initial notes retrieved and verified
+          [x] STEP 3: UPDATE   - Notes updated via keeper_set
+          [x] STEP 4: READ BACK - Updated notes verified
+          [x] STEP 5: COPY     - Notes copied to filesystem
+          [x] STEP 6: VERIFY   - File contents match notes
+          [x] STEP 7: DELETE   - Record removed
+          [x] STEP 8: VERIFY   - Deletion confirmed
+
+          Bug Fixes Verified:
+          - KSM-770: keeper_get with notes: yes works correctly
+          - KSM-771: keeper_copy with notes: yes works correctly
+          - KSM-772: keeper_set with notes: yes sets value correctly
+          - KSM-773: keeper_create with notes: (plural) works correctly
+          ==========================================================

@@ -1,0 +1,150 @@
+---
+# 02_notes_get.yml - Test keeper_get with notes (KSM-770 verification)
+# Tests retrieving notes from records using notes: yes parameter
+# AAP: Receives record UIDs as extra_vars from workflow (set_stats in 01)
+
+- name: Notes Get - Retrieve Notes Tests (KSM-770)
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Check if record UIDs are available
+      ansible.builtin.assert:
+        that:
+          - notes_record_uid is defined
+        fail_msg: "Record UIDs not provided. Run as part of the AAP workflow or pass UIDs as extra vars."
+        success_msg: "Notes test record UIDs loaded successfully"
+
+  tasks:
+    - name: Display test header
+      ansible.builtin.debug:
+        msg: "========== NOTES GET TESTS (KSM-770) =========="
+
+    # Test 2.1: Get notes by UID - happy path
+    - name: "Test 2.1 - Get notes by UID (happy path)"
+      keeper_get:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+      register: get_notes_by_uid
+
+    - name: Display retrieved notes
+      ansible.builtin.debug:
+        msg: "Retrieved notes: {{ get_notes_by_uid.value }}"
+
+    - name: Assert notes retrieved successfully by UID
+      ansible.builtin.assert:
+        that:
+          - get_notes_by_uid.value is defined
+          - "'KSM-772 regression testing' in get_notes_by_uid.value"
+        fail_msg: "Notes not retrieved correctly by UID"
+        success_msg: "SUCCESS: Notes retrieved by UID"
+
+    # Test 2.2: Get notes by title - happy path
+    - name: "Test 2.2 - Get notes by title (happy path)"
+      keeper_get:
+        title: "[KSM-772] Notes Test - With Notes"
+        notes: yes
+      register: get_notes_by_title
+
+    - name: Assert notes retrieved successfully by title
+      ansible.builtin.assert:
+        that:
+          - get_notes_by_title.value is defined
+          - "'KSM-772 regression testing' in get_notes_by_title.value"
+        fail_msg: "Notes not retrieved correctly by title"
+        success_msg: "SUCCESS: Notes retrieved by title"
+
+    # Test 2.3: Get notes from record with empty/missing notes (KSM-770 verification)
+    - name: "Test 2.3 - Get notes from record with no notes (KSM-770)"
+      keeper_get:
+        uid: "{{ no_notes_record_uid }}"
+        notes: yes
+      register: get_empty_notes
+      ignore_errors: true
+
+    - name: Display empty notes result
+      ansible.builtin.debug:
+        msg: "Empty notes result: {{ get_empty_notes }}"
+
+    - name: "Assert KSM-770 - No 'Cannot find key True' error"
+      ansible.builtin.assert:
+        that:
+          - >
+            get_empty_notes is not failed or
+            (get_empty_notes.msg is defined and 'Cannot find key True' not in get_empty_notes.msg)
+        fail_msg: "KSM-770 REGRESSION: Got 'Cannot find key True' error for empty notes"
+        success_msg: "SUCCESS: KSM-770 verified - no 'Cannot find key True' error for empty notes"
+
+    # Test 2.4: Get multiline notes
+    - name: "Test 2.4 - Get multiline notes"
+      keeper_get:
+        uid: "{{ multiline_record_uid }}"
+        notes: yes
+      register: get_multiline_notes
+
+    - name: Display multiline notes
+      ansible.builtin.debug:
+        msg: "Multiline notes: {{ get_multiline_notes.value }}"
+
+    - name: Assert multiline notes retrieved correctly
+      ansible.builtin.assert:
+        that:
+          - get_multiline_notes.value is defined
+          - "'Line 1' in get_multiline_notes.value"
+          - "'Line 2' in get_multiline_notes.value"
+          - "'Line 3' in get_multiline_notes.value"
+        fail_msg: "Multiline notes not retrieved correctly"
+        success_msg: "SUCCESS: Multiline notes retrieved with all lines intact"
+
+    # Test 2.5: Get notes with special characters
+    - name: "Test 2.5 - Get notes with special characters"
+      keeper_get:
+        uid: "{{ special_record_uid }}"
+        notes: yes
+      register: get_special_notes
+
+    - name: Display special character notes
+      ansible.builtin.debug:
+        msg: "Special notes: {{ get_special_notes.value }}"
+
+    - name: Assert special character notes retrieved correctly
+      ansible.builtin.assert:
+        that:
+          - get_special_notes.value is defined
+          - "'Special chars' in get_special_notes.value"
+        fail_msg: "Special character notes not retrieved correctly"
+        success_msg: "SUCCESS: Special character notes retrieved with integrity"
+
+    # Test 2.6: Verify notes: yes does not interfere with regular field retrieval
+    - name: "Test 2.6a - Get password (regular field) from notes record"
+      keeper_get:
+        uid: "{{ notes_record_uid }}"
+        field: password
+      register: get_password_from_notes_record
+
+    - name: Assert password still retrievable from notes record
+      ansible.builtin.assert:
+        that:
+          - get_password_from_notes_record.value == "NotesTestPwd123!"
+        fail_msg: "Password field not accessible on notes record"
+        success_msg: "SUCCESS: Password field accessible alongside notes"
+
+    - name: "Test 2.6b - Get notes separately from same record"
+      keeper_get:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+      register: get_notes_after_password
+
+    - name: Assert notes still retrievable after field access
+      ansible.builtin.assert:
+        that:
+          - get_notes_after_password.value is defined
+          - "'KSM-772 regression testing' in get_notes_after_password.value"
+        fail_msg: "Notes not accessible after regular field retrieval"
+        success_msg: "SUCCESS: Notes accessible independently of regular fields"
+
+    - name: Display test summary
+      ansible.builtin.debug:
+        msg: "========== NOTES GET TESTS COMPLETE =========="

@@ -1,0 +1,57 @@
+---
+# 07_notes_cleanup.yml - Cleanup test records created by notes tests
+# Removes all records created during the KSM-772 notes test run
+# AAP: Receives record UIDs as extra_vars from workflow (set_stats in 01)
+
+- name: Notes Cleanup - Remove Test Records
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Check if record UIDs are available
+      ansible.builtin.assert:
+        that:
+          - notes_record_uid is defined
+        fail_msg: "No notes test records to clean up (record UIDs not provided)"
+        success_msg: "Notes test record UIDs loaded for cleanup"
+
+  tasks:
+    - name: Display cleanup header
+      ansible.builtin.debug:
+        msg: "========== NOTES CLEANUP =========="
+
+    - name: Remove notes test record
+      keeper_remove:
+        uid: "{{ notes_record_uid }}"
+      register: remove_notes
+      ignore_errors: true
+
+    - name: Remove no-notes test record
+      keeper_remove:
+        uid: "{{ no_notes_record_uid }}"
+      register: remove_no_notes
+      ignore_errors: true
+
+    - name: Remove multiline notes test record
+      keeper_remove:
+        uid: "{{ multiline_record_uid }}"
+      register: remove_multiline
+      ignore_errors: true
+
+    - name: Remove special chars notes test record
+      keeper_remove:
+        uid: "{{ special_record_uid }}"
+      register: remove_special
+      ignore_errors: true
+
+    - name: Display cleanup results
+      ansible.builtin.debug:
+        msg:
+          - "========== CLEANUP RESULTS =========="
+          - "Notes record ({{ notes_record_uid }}): {{ 'removed' if remove_notes is not failed else 'FAILED/already removed' }}"
+          - "No-notes record ({{ no_notes_record_uid }}): {{ 'removed' if remove_no_notes is not failed else 'FAILED/already removed' }}"
+          - "Multiline record ({{ multiline_record_uid }}): {{ 'removed' if remove_multiline is not failed else 'FAILED/already removed' }}"
+          - "Special chars record ({{ special_record_uid }}): {{ 'removed' if remove_special is not failed else 'FAILED/already removed' }}"
+          - "========== NOTES CLEANUP COMPLETE =========="

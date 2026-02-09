@@ -1,0 +1,661 @@
+---
+# 06_notes_bug_verification.yml - Explicit bug regression tests
+# Verifies that KSM-770, KSM-771, KSM-772, and KSM-773 are fixed
+# Tests every code path touched by the three fixes
+# AAP: Self-contained playbook (creates and cleans up its own records)
+
+- name: Notes Bug Verification - Regression Tests for KSM-770, KSM-771, KSM-772, KSM-773
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  vars:
+    shared_folder_uid: "2tIWb_eg35_E75I7wTOtkQ"
+    output_dir: "/tmp/ksm_notes_test"
+
+  tasks:
+    - name: Display test header
+      ansible.builtin.debug:
+        msg: |
+          ==========================================================
+          BUG VERIFICATION - KSM-770, KSM-771, KSM-772, KSM-773
+          ==========================================================
+          KSM-770: get_field_type_enum_and_key() sets field_key=None
+                   for notes (was True from bool). Tests:
+                   - Empty notes: no "Cannot find key True" error
+                   - Error message references None, not True
+                   - Empty string notes vs missing notes
+          KSM-771: keeper_copy pops "notes" from args before
+                   delegating to built-in copy. Tests:
+                   - Basic copy: no "Unsupported parameters" error
+                   - Copy with backup: notes cleaned from args
+                   - Copy with mode: file permissions correct
+          KSM-772: set_value() uses value param (not key=None)
+                   for notes. Tests:
+                   - Set+read round-trip: value not None
+                   - Set on record with no prior notes
+                   - Multiple set overwrites
+          KSM-773: keeper_create parameter naming fix (note->notes)
+                   and keeper_set missing DOCUMENTATION. Tests:
+                   - Create with notes: (plural) attaches notes
+                   - Create with multiline notes preserved
+                   - Create with special chars notes preserved
+                   - Old note: (singular) parameter is ignored
+          ==========================================================
+
+    # ============================================================
+    # SETUP: Create test records for bug verification
+    # ============================================================
+    - name: Ensure output directory exists
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: "SETUP - Create record WITHOUT notes (for KSM-770)"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - No Notes"
+        fields:
+          - type: login
+            value: "bug_verify_no_notes"
+          - type: password
+            value: "BugVerifyPwd123!"
+      register: no_notes_record
+
+    - name: "SETUP - Create record with empty string notes (for KSM-770 edge case)"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - Empty String Notes"
+        fields:
+          - type: login
+            value: "bug_verify_empty_notes"
+          - type: password
+            value: "BugVerifyPwd789!"
+        notes: ""
+      register: empty_string_notes_record
+
+    - name: "SETUP - Create record WITH notes (for KSM-771 and KSM-772)"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - With Notes"
+        fields:
+          - type: login
+            value: "bug_verify_with_notes"
+          - type: password
+            value: "BugVerifyPwd456!"
+        notes: "original notes for bug verification"
+      register: with_notes_record
+
+    - name: Assert setup records created
+      ansible.builtin.assert:
+        that:
+          - no_notes_record.record_uid is defined
+          - empty_string_notes_record.record_uid is defined
+          - with_notes_record.record_uid is defined
+        fail_msg: "SETUP FAILED: Could not create test records"
+        success_msg: "SETUP SUCCESS: Test records created"
+
+    # ============================================================
+    # KSM-770 REGRESSION TEST
+    # Bug: get_field_type_enum_and_key() returned field_key=True
+    #      (from notes: yes boolean) instead of field_key=None
+    # Fix: field_key = None if key == "notes" else args.get(key)
+    # ============================================================
+    - name: "========== KSM-770 REGRESSION TEST =========="
+      ansible.builtin.debug:
+        msg: "Testing: keeper_get with notes: yes on record WITHOUT notes"
+
+    # KSM-770 Test 1: Get notes from record that has no notes at all
+    - name: "KSM-770.1 - Get notes from record with no notes"
+      keeper_get:
+        uid: "{{ no_notes_record.record_uid }}"
+        notes: yes
+      register: ksm770_result
+      ignore_errors: true
+
+    - name: Display KSM-770.1 result
+      ansible.builtin.debug:
+        msg: "KSM-770.1 result - failed: {{ ksm770_result is failed }}, msg: {{ ksm770_result.msg | default('N/A') }}"
+
+    - name: "KSM-770.1 - Assert no 'Cannot find key True' error"
+      ansible.builtin.assert:
+        that:
+          - >
+            ksm770_result is not failed or
+            'Cannot find key True' not in (ksm770_result.msg | default(''))
+        fail_msg: "KSM-770 REGRESSION DETECTED: 'Cannot find key True' error occurred"
+        success_msg: "KSM-770.1 PASSED: No 'Cannot find key True' error"
+
+    - name: "KSM-770.1 - Assert error message uses None not True as key"
+      ansible.builtin.assert:
+        that:
+          - >
+            ksm770_result is not failed or
+            'key True' not in (ksm770_result.msg | default(''))
+        fail_msg: "KSM-770 REGRESSION DETECTED: Boolean True used as key in error message"
+        success_msg: "KSM-770.1 PASSED: Boolean True not used as key"
+
+    # KSM-770 Test 2: If it did fail, verify error references None (correct) not True (bug)
+    - name: "KSM-770.2 - Verify error message format when notes missing"
+      ansible.builtin.assert:
+        that:
+          - >
+            ksm770_result is not failed or
+            'key None' in (ksm770_result.msg | default(''))
+        fail_msg: "KSM-770: Error message for missing notes does not reference 'key None' - unexpected error format"
+        success_msg: "KSM-770.2 PASSED: Error message correctly references 'key None' for missing notes"
+      when: ksm770_result is failed
+
+    # KSM-770 Test 3: Get notes from record with empty string notes
+    # Code path: record.dict.get('notes') returns "" (not None), so values=[""]
+    - name: "KSM-770.3 - Get notes from record with empty string notes"
+      keeper_get:
+        uid: "{{ empty_string_notes_record.record_uid }}"
+        notes: yes
+      register: ksm770_empty_string_result
+      ignore_errors: true
+
+    - name: Display KSM-770.3 result
+      ansible.builtin.debug:
+        msg: "KSM-770.3 result - failed: {{ ksm770_empty_string_result is failed }}, value: {{ ksm770_empty_string_result.value | default('N/A') }}"
+
+    - name: "KSM-770.3 - Assert empty string notes does not produce 'Cannot find key True'"
+      ansible.builtin.assert:
+        that:
+          - >
+            ksm770_empty_string_result is not failed or
+            'Cannot find key True' not in (ksm770_empty_string_result.msg | default(''))
+        fail_msg: "KSM-770 REGRESSION: Empty string notes produced 'Cannot find key True'"
+        success_msg: "KSM-770.3 PASSED: Empty string notes handled correctly"
+
+    # KSM-770 Test 4: Get notes from record WITH notes (sanity check)
+    - name: "KSM-770.4 - Get notes from record with notes (sanity check)"
+      keeper_get:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+      register: ksm770_has_notes_result
+
+    - name: "KSM-770.4 - Assert notes retrieved when present"
+      ansible.builtin.assert:
+        that:
+          - ksm770_has_notes_result is not failed
+          - ksm770_has_notes_result.value == "original notes for bug verification"
+        fail_msg: "KSM-770: Failed to retrieve existing notes"
+        success_msg: "KSM-770.4 PASSED: Notes retrieved correctly with field_key=None"
+
+    # KSM-770 Test 5: Mutual exclusion
+    - name: "KSM-770.5 - Verify mutual exclusion: notes + field raises error"
+      keeper_get:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        field: password
+      register: ksm770_mutual_exclusion
+      ignore_errors: true
+
+    - name: "KSM-770.5 - Assert mutual exclusion error"
+      ansible.builtin.assert:
+        that:
+          - ksm770_mutual_exclusion is failed
+          - "'multiple field types' in (ksm770_mutual_exclusion.msg | default('')) or 'Found multiple' in (ksm770_mutual_exclusion.msg | default(''))"
+        fail_msg: "KSM-770: Mutual exclusion check did not fire for notes + field"
+        success_msg: "KSM-770.5 PASSED: Mutual exclusion correctly rejects notes + field combo"
+
+    # ============================================================
+    # KSM-771 REGRESSION TEST
+    # Bug: "notes" param left in self._task.args, passed to
+    #      built-in copy module which rejected it
+    # Fix: self._task.args.pop("notes", None) added at line 302
+    # ============================================================
+    - name: "========== KSM-771 REGRESSION TEST =========="
+      ansible.builtin.debug:
+        msg: "Testing: keeper_copy with notes: yes should not produce 'Unsupported parameters' error"
+
+    # KSM-771 Test 1: Basic copy notes to file
+    - name: "KSM-771.1 - Copy notes to file (basic)"
+      keeper_copy:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/ksm771_basic.txt"
+      register: ksm771_basic_result
+      ignore_errors: true
+
+    - name: Display KSM-771.1 result
+      ansible.builtin.debug:
+        msg: "KSM-771.1 result: failed={{ ksm771_basic_result is failed }}, msg={{ ksm771_basic_result.msg | default('none') }}"
+
+    - name: "KSM-771.1 - Assert no 'Unsupported parameters' error"
+      ansible.builtin.assert:
+        that:
+          - ksm771_basic_result is not failed
+        fail_msg: "KSM-771 REGRESSION DETECTED: keeper_copy with notes: yes failed - {{ ksm771_basic_result.msg | default('') }}"
+        success_msg: "KSM-771.1 PASSED: keeper_copy with notes: yes succeeded"
+
+    - name: "KSM-771.1 - Verify file content matches notes"
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/ksm771_basic.txt"
+      register: ksm771_basic_content
+
+    - name: "KSM-771.1 - Assert content matches"
+      ansible.builtin.assert:
+        that:
+          - (ksm771_basic_content.content | b64decode) == "original notes for bug verification"
+        fail_msg: "KSM-771: File content '{{ ksm771_basic_content.content | b64decode }}' does not match expected notes"
+        success_msg: "KSM-771.1 PASSED: File content matches notes exactly"
+
+    # KSM-771 Test 2: Copy notes with mode
+    - name: "KSM-771.2 - Copy notes with mode 0600"
+      keeper_copy:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/ksm771_secure.txt"
+        mode: '0600'
+      register: ksm771_mode_result
+
+    - name: "KSM-771.2 - Verify file permissions"
+      ansible.builtin.stat:
+        path: "{{ output_dir }}/ksm771_secure.txt"
+      register: ksm771_secure_stat
+
+    - name: "KSM-771.2 - Assert mode preserved after notes arg cleanup"
+      ansible.builtin.assert:
+        that:
+          - ksm771_mode_result is not failed
+          - ksm771_secure_stat.stat.mode == '0600'
+        fail_msg: "KSM-771: File mode not preserved - got {{ ksm771_secure_stat.stat.mode | default('unknown') }}"
+        success_msg: "KSM-771.2 PASSED: mode=0600 preserved after notes arg cleanup"
+
+    # KSM-771 Test 3: Copy notes with backup
+    - name: "KSM-771.3 - Copy notes with backup option"
+      keeper_copy:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/ksm771_basic.txt"
+        backup: true
+      register: ksm771_backup_result
+
+    - name: "KSM-771.3 - Assert backup copy with notes succeeded"
+      ansible.builtin.assert:
+        that:
+          - ksm771_backup_result is not failed
+        fail_msg: "KSM-771: Copy with backup + notes failed - {{ ksm771_backup_result.msg | default('') }}"
+        success_msg: "KSM-771.3 PASSED: Copy with backup + notes succeeded"
+
+    # KSM-771 Test 4: Copy notes by title
+    - name: "KSM-771.4 - Copy notes by title"
+      keeper_copy:
+        title: "[KSM-772] Bug Verify - With Notes"
+        notes: yes
+        dest: "{{ output_dir }}/ksm771_title.txt"
+      register: ksm771_title_result
+
+    - name: "KSM-771.4 - Assert copy by title + notes succeeded"
+      ansible.builtin.assert:
+        that:
+          - ksm771_title_result is not failed
+        fail_msg: "KSM-771: Copy by title + notes failed"
+        success_msg: "KSM-771.4 PASSED: Copy by title + notes succeeded"
+
+    - name: "KSM-771.4 - Verify title-based copy content"
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/ksm771_title.txt"
+      register: ksm771_title_content
+
+    - name: "KSM-771.4 - Assert title-based copy content matches"
+      ansible.builtin.assert:
+        that:
+          - (ksm771_title_content.content | b64decode) == "original notes for bug verification"
+        fail_msg: "KSM-771: Title-based copy content does not match"
+        success_msg: "KSM-771.4 PASSED: Title-based copy content matches"
+
+    # ============================================================
+    # KSM-772 REGRESSION TEST
+    # Bug: set_value() did record.dict["notes"] = key (which is
+    #      None after KSM-770 fix) instead of = value
+    # Fix: record.dict["notes"] = value
+    # ============================================================
+    - name: "========== KSM-772 REGRESSION TEST =========="
+      ansible.builtin.debug:
+        msg: "Testing: keeper_set with notes: yes should set value correctly (not None)"
+
+    # KSM-772 Test 1: Basic set + read-back round-trip
+    - name: "KSM-772.1 - Set notes to 'updated'"
+      keeper_set:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        value: "updated"
+      register: ksm772_set_result
+
+    - name: "KSM-772.1 - Assert set did not fail"
+      ansible.builtin.assert:
+        that:
+          - ksm772_set_result is not failed
+        fail_msg: "KSM-772: keeper_set with notes failed"
+        success_msg: "KSM-772.1 PASSED: keeper_set with notes succeeded"
+
+    - name: "KSM-772.1 - Read back notes"
+      keeper_get:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+      register: ksm772_get_result
+
+    - name: Display KSM-772.1 read-back
+      ansible.builtin.debug:
+        msg: "KSM-772.1 read-back value: '{{ ksm772_get_result.value }}' (type: {{ ksm772_get_result.value | type_debug }})"
+
+    - name: "KSM-772.1 - Assert value equals 'updated' (NOT None, NOT empty)"
+      ansible.builtin.assert:
+        that:
+          - ksm772_get_result.value is defined
+          - ksm772_get_result.value == "updated"
+          - ksm772_get_result.value != ""
+          - ksm772_get_result.value != "None"
+        fail_msg: "KSM-772 REGRESSION DETECTED: Notes value was '{{ ksm772_get_result.value | default('None/undefined') }}' instead of 'updated'"
+        success_msg: "KSM-772.1 PASSED: Notes value correctly set to 'updated'"
+
+    # KSM-772 Test 2: Set notes on record that NEVER had notes before
+    - name: "KSM-772.2 - Set notes on record that never had notes"
+      keeper_set:
+        uid: "{{ no_notes_record.record_uid }}"
+        notes: yes
+        value: "first notes ever on this record"
+      register: ksm772_first_notes_result
+
+    - name: "KSM-772.2 - Assert set on no-notes record succeeded"
+      ansible.builtin.assert:
+        that:
+          - ksm772_first_notes_result is not failed
+        fail_msg: "KSM-772: Setting notes on record with no prior notes failed"
+        success_msg: "KSM-772.2 PASSED: Setting notes on previously-noteless record succeeded"
+
+    - name: "KSM-772.2 - Read back first-ever notes"
+      keeper_get:
+        uid: "{{ no_notes_record.record_uid }}"
+        notes: yes
+      register: ksm772_first_notes_get
+
+    - name: "KSM-772.2 - Assert first-ever notes set correctly"
+      ansible.builtin.assert:
+        that:
+          - ksm772_first_notes_get.value == "first notes ever on this record"
+        fail_msg: "KSM-772: First-ever notes not set correctly (got '{{ ksm772_first_notes_get.value | default('None') }}')"
+        success_msg: "KSM-772.2 PASSED: First-ever notes set and retrieved correctly"
+
+    # KSM-772 Test 3: Overwrite notes
+    - name: "KSM-772.3 - Overwrite notes (second set)"
+      keeper_set:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        value: "overwritten value"
+      register: ksm772_overwrite_result
+
+    - name: "KSM-772.3 - Read back overwritten notes"
+      keeper_get:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+      register: ksm772_overwrite_get
+
+    - name: "KSM-772.3 - Assert overwrite persisted"
+      ansible.builtin.assert:
+        that:
+          - ksm772_overwrite_get.value == "overwritten value"
+        fail_msg: "KSM-772: Overwrite did not persist (got '{{ ksm772_overwrite_get.value | default('None') }}')"
+        success_msg: "KSM-772.3 PASSED: Notes overwrite persisted correctly"
+
+    # KSM-772 Test 4: Set notes by title
+    - name: "KSM-772.4 - Set notes by title"
+      keeper_set:
+        title: "[KSM-772] Bug Verify - Empty String Notes"
+        notes: yes
+        value: "notes set by title"
+      register: ksm772_title_set
+
+    - name: "KSM-772.4 - Read back notes set by title"
+      keeper_get:
+        uid: "{{ empty_string_notes_record.record_uid }}"
+        notes: yes
+      register: ksm772_title_get
+
+    - name: "KSM-772.4 - Assert notes set by title"
+      ansible.builtin.assert:
+        that:
+          - ksm772_title_get.value == "notes set by title"
+        fail_msg: "KSM-772: Notes set by title did not persist"
+        success_msg: "KSM-772.4 PASSED: Notes set by title and verified by UID"
+
+    # KSM-772 Test 5: Set + Copy round-trip
+    - name: "KSM-772.5 - Set notes then copy to file (combined test)"
+      keeper_set:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        value: "value for copy verification"
+
+    - name: "KSM-772.5 - Copy the just-set notes to file"
+      keeper_copy:
+        uid: "{{ with_notes_record.record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/ksm772_copy_verify.txt"
+
+    - name: "KSM-772.5 - Read file and verify"
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/ksm772_copy_verify.txt"
+      register: ksm772_copy_content
+
+    - name: "KSM-772.5 - Assert set->copy round-trip matches"
+      ansible.builtin.assert:
+        that:
+          - (ksm772_copy_content.content | b64decode) == "value for copy verification"
+        fail_msg: "KSM-772+771: Set->Copy round-trip failed - file has '{{ ksm772_copy_content.content | b64decode }}'"
+        success_msg: "KSM-772.5 PASSED: Set->Copy round-trip verified"
+
+    # ============================================================
+    # KSM-773 REGRESSION TEST
+    # Bug: keeper_create used "note" (singular) as parameter name
+    #      while keeper_get/set/copy used "notes" (plural).
+    #      Code: self._task.args.get("note") missed the value
+    #      when users passed "notes:" (plural, consistent with
+    #      other modules).
+    # Fix: Changed to self._task.args.get("notes") and updated
+    #      DOCUMENTATION/EXAMPLES to use "notes:" (plural).
+    #      Also added missing "notes" param to keeper_set DOCS.
+    # ============================================================
+    - name: "========== KSM-773 REGRESSION TEST =========="
+      ansible.builtin.debug:
+        msg: "Testing: keeper_create with notes: (plural) should correctly attach notes to record"
+
+    # KSM-773 Test 1: Create record with notes: (plural)
+    - name: "KSM-773.1 - Create record with notes: (plural)"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - KSM-773 Plural Notes"
+        fields:
+          - type: login
+            value: "ksm773_test_user"
+          - type: password
+            value: "KSM773Pwd123!"
+        notes: "notes created with plural parameter"
+      register: ksm773_plural_record
+
+    - name: "KSM-773.1 - Assert record was created"
+      ansible.builtin.assert:
+        that:
+          - ksm773_plural_record.record_uid is defined
+          - ksm773_plural_record.record_uid | length > 0
+        fail_msg: "KSM-773: Record creation with notes: (plural) failed"
+        success_msg: "KSM-773.1 PASSED: Record created with notes: (plural)"
+
+    - name: "KSM-773.1 - Read back notes from created record"
+      keeper_get:
+        uid: "{{ ksm773_plural_record.record_uid }}"
+        notes: yes
+      register: ksm773_plural_get
+
+    - name: Display KSM-773.1 read-back
+      ansible.builtin.debug:
+        msg: "KSM-773.1 read-back: '{{ ksm773_plural_get.value | default('UNDEFINED') }}'"
+
+    - name: "KSM-773.1 - Assert notes were attached via plural parameter"
+      ansible.builtin.assert:
+        that:
+          - ksm773_plural_get.value is defined
+          - ksm773_plural_get.value == "notes created with plural parameter"
+        fail_msg: "KSM-773 REGRESSION DETECTED: notes: (plural) in keeper_create did not attach notes (got '{{ ksm773_plural_get.value | default('None/undefined') }}')"
+        success_msg: "KSM-773.1 PASSED: notes: (plural) correctly attached notes to record"
+
+    # KSM-773 Test 2: Create record with multiline notes via plural parameter
+    - name: "KSM-773.2 - Create record with multiline notes: (plural)"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - KSM-773 Multiline"
+        fields:
+          - type: login
+            value: "ksm773_multiline_user"
+          - type: password
+            value: "KSM773MultiPwd!"
+        notes: |
+          Line 1: Multiline notes via plural parameter
+          Line 2: KSM-773 regression test
+          Line 3: All lines should be preserved
+      register: ksm773_multiline_record
+
+    - name: "KSM-773.2 - Read back multiline notes"
+      keeper_get:
+        uid: "{{ ksm773_multiline_record.record_uid }}"
+        notes: yes
+      register: ksm773_multiline_get
+
+    - name: "KSM-773.2 - Assert multiline notes preserved"
+      ansible.builtin.assert:
+        that:
+          - "'Line 1' in ksm773_multiline_get.value"
+          - "'Line 2' in ksm773_multiline_get.value"
+          - "'Line 3' in ksm773_multiline_get.value"
+        fail_msg: "KSM-773: Multiline notes not preserved via plural parameter"
+        success_msg: "KSM-773.2 PASSED: Multiline notes preserved via notes: (plural)"
+
+    # KSM-773 Test 3: Create record with special characters in notes
+    - name: "KSM-773.3 - Create record with special chars notes: (plural)"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - KSM-773 Special Chars"
+        fields:
+          - type: login
+            value: "ksm773_special_user"
+          - type: password
+            value: "KSM773SpecPwd!"
+        notes: "Special: !@#$%^&*() quotes: 'single' and <angle> brackets"
+      register: ksm773_special_record
+
+    - name: "KSM-773.3 - Read back special chars notes"
+      keeper_get:
+        uid: "{{ ksm773_special_record.record_uid }}"
+        notes: yes
+      register: ksm773_special_get
+
+    - name: "KSM-773.3 - Assert special chars notes preserved"
+      ansible.builtin.assert:
+        that:
+          - "'Special:' in ksm773_special_get.value"
+          - "'!@#$%' in ksm773_special_get.value"
+          - "\"'single'\" in ksm773_special_get.value"
+        fail_msg: "KSM-773: Special chars notes not preserved via plural parameter"
+        success_msg: "KSM-773.3 PASSED: Special chars notes preserved via notes: (plural)"
+
+    # KSM-773 Test 4: Verify old parameter name "note:" (singular) is now ignored
+    - name: "KSM-773.4 - Create record with old note: (singular) parameter"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Bug Verify - KSM-773 Old Singular"
+        fields:
+          - type: login
+            value: "ksm773_old_param_user"
+          - type: password
+            value: "KSM773OldPwd!"
+        note: "this should be ignored after KSM-773 fix"
+      register: ksm773_old_param_record
+
+    - name: "KSM-773.4 - Read back notes from old-param record"
+      keeper_get:
+        uid: "{{ ksm773_old_param_record.record_uid }}"
+        notes: yes
+      register: ksm773_old_param_get
+      ignore_errors: true
+
+    - name: Display KSM-773.4 result
+      ansible.builtin.debug:
+        msg: "KSM-773.4 - old param result: failed={{ ksm773_old_param_get is failed }}, value='{{ ksm773_old_param_get.value | default('NONE') }}'"
+
+    - name: "KSM-773.4 - Assert old note: (singular) parameter is ignored"
+      ansible.builtin.assert:
+        that:
+          - >
+            ksm773_old_param_get is failed or
+            ksm773_old_param_get.value | default('') == '' or
+            ksm773_old_param_get.value | default('') != 'this should be ignored after KSM-773 fix'
+        fail_msg: "KSM-773: Old note: (singular) parameter was NOT ignored - code may still read 'note' instead of 'notes'"
+        success_msg: "KSM-773.4 PASSED: Old note: (singular) parameter is correctly ignored"
+
+    # ============================================================
+    # CLEANUP
+    # ============================================================
+    - name: "CLEANUP - Remove bug verification test records"
+      keeper_remove:
+        uid: "{{ item }}"
+      loop:
+        - "{{ no_notes_record.record_uid }}"
+        - "{{ empty_string_notes_record.record_uid }}"
+        - "{{ with_notes_record.record_uid }}"
+        - "{{ ksm773_plural_record.record_uid }}"
+        - "{{ ksm773_multiline_record.record_uid }}"
+        - "{{ ksm773_special_record.record_uid }}"
+        - "{{ ksm773_old_param_record.record_uid }}"
+      ignore_errors: true
+
+    - name: Clean up test files
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: absent
+
+    # ============================================================
+    # SUMMARY
+    # ============================================================
+    - name: Display bug verification summary
+      ansible.builtin.debug:
+        msg: |
+          ==========================================================
+          BUG VERIFICATION COMPLETE
+          ==========================================================
+          KSM-770 (get_field_type_enum_and_key field_key fix):
+            [x] 770.1: No "Cannot find key True" on missing notes
+            [x] 770.2: Error message references None, not True
+            [x] 770.3: Empty string notes handled (not None)
+            [x] 770.4: Present notes still retrieved correctly
+            [x] 770.5: Mutual exclusion (notes + field) rejected
+
+          KSM-771 (keeper_copy args.pop("notes") fix):
+            [x] 771.1: Basic copy - no "Unsupported parameters"
+            [x] 771.2: Copy with mode - permissions preserved
+            [x] 771.3: Copy with backup - notes cleaned from args
+            [x] 771.4: Copy by title - title + notes both work
+
+          KSM-772 (set_value uses value not key fix):
+            [x] 772.1: Set+read round-trip - value not None
+            [x] 772.2: Set on record with no prior notes
+            [x] 772.3: Overwrite existing notes
+            [x] 772.4: Set by title, verify by UID
+            [x] 772.5: Set->Copy round-trip verification
+
+          KSM-773 (keeper_create note->notes param naming fix):
+            [x] 773.1: Create with notes: (plural) attaches notes
+            [x] 773.2: Multiline notes preserved via plural param
+            [x] 773.3: Special chars notes preserved via plural param
+            [x] 773.4: Old note: (singular) parameter is ignored
+          ==========================================================

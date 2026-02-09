@@ -1,0 +1,148 @@
+---
+# 04_notes_copy.yml - Test keeper_copy with notes (KSM-771 verification)
+# Tests copying notes to filesystem using notes: yes parameter
+# AAP: Receives record UIDs as extra_vars from workflow (set_stats in 01)
+# AAP: Uses /tmp for output files (available in execution environment)
+
+- name: Notes Copy - Copy Notes to File Tests (KSM-771)
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  vars:
+    output_dir: "/tmp/ksm_notes_test"
+
+  pre_tasks:
+    - name: Check if record UIDs are available
+      ansible.builtin.assert:
+        that:
+          - notes_record_uid is defined
+        fail_msg: "Record UIDs not provided. Run as part of the AAP workflow or pass UIDs as extra vars."
+        success_msg: "Notes test record UIDs loaded successfully"
+
+    - name: Ensure output directory exists
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: directory
+        mode: '0755'
+
+  tasks:
+    - name: Display test header
+      ansible.builtin.debug:
+        msg: "========== NOTES COPY TESTS (KSM-771) =========="
+
+    # Test 4.1: Copy notes to file by UID - happy path
+    - name: "Test 4.1 - Copy notes to file by UID (happy path)"
+      keeper_copy:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/notes_copy_test.txt"
+      register: copy_notes_result
+
+    - name: Assert copy notes did not fail (KSM-771)
+      ansible.builtin.assert:
+        that:
+          - copy_notes_result is not failed
+        fail_msg: "KSM-771 REGRESSION: keeper_copy with notes: yes failed (possibly 'Unsupported parameters for copy module: notes')"
+        success_msg: "SUCCESS: KSM-771 verified - keeper_copy with notes: yes succeeded"
+
+    # Test 4.2: Verify file content matches notes value
+    - name: "Test 4.2 - Verify copied notes file content"
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/notes_copy_test.txt"
+      register: notes_file_contents
+
+    - name: Display copied notes content
+      ansible.builtin.debug:
+        msg: "Copied notes content: {{ notes_file_contents.content | b64decode }}"
+
+    - name: Assert file content matches notes
+      ansible.builtin.assert:
+        that:
+          - "'Overwritten notes - second update' in (notes_file_contents.content | b64decode)"
+        fail_msg: "Copied notes file does not contain expected value"
+        success_msg: "SUCCESS: Copied notes file content matches expected value"
+
+    # Test 4.3: Copy notes with file permissions
+    - name: "Test 4.3 - Copy notes with mode 0600"
+      keeper_copy:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/notes_secure.txt"
+        mode: '0600'
+      register: copy_notes_secure
+
+    - name: Verify secure notes file permissions
+      ansible.builtin.stat:
+        path: "{{ output_dir }}/notes_secure.txt"
+      register: secure_notes_stat
+
+    - name: Assert secure notes file has correct permissions
+      ansible.builtin.assert:
+        that:
+          - secure_notes_stat.stat.exists
+          - secure_notes_stat.stat.mode == '0600'
+        fail_msg: "Notes file does not have correct permissions (0600)"
+        success_msg: "SUCCESS: Notes copied with correct file permissions (0600)"
+
+    # Test 4.4: Copy notes by title
+    - name: "Test 4.4 - Copy notes by title"
+      keeper_copy:
+        title: "[KSM-772] Notes Test - Special Chars"
+        notes: yes
+        dest: "{{ output_dir }}/notes_by_title.txt"
+      register: copy_notes_by_title
+
+    - name: Verify notes copied by title
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/notes_by_title.txt"
+      register: title_notes_contents
+
+    - name: Assert notes copied by title correctly
+      ansible.builtin.assert:
+        that:
+          - "'Notes updated by title - KSM-772' in (title_notes_contents.content | b64decode)"
+        fail_msg: "Notes not copied correctly by title"
+        success_msg: "SUCCESS: Notes copied by title and verified"
+
+    # Test 4.5: Copy multiline notes to file
+    - name: "Test 4.5 - Copy multiline notes to file"
+      keeper_copy:
+        uid: "{{ multiline_record_uid }}"
+        notes: yes
+        dest: "{{ output_dir }}/notes_multiline.txt"
+      register: copy_multiline_notes
+
+    - name: Verify multiline notes file
+      ansible.builtin.slurp:
+        src: "{{ output_dir }}/notes_multiline.txt"
+      register: multiline_notes_contents
+
+    - name: Assert multiline notes copied correctly
+      ansible.builtin.assert:
+        that:
+          - "'Updated Line 1' in (multiline_notes_contents.content | b64decode)"
+          - "'Updated Line 2' in (multiline_notes_contents.content | b64decode)"
+        fail_msg: "Multiline notes not copied correctly to file"
+        success_msg: "SUCCESS: Multiline notes copied to file with integrity"
+
+    # Cleanup test files
+    - name: Clean up notes test files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ output_dir }}/notes_copy_test.txt"
+        - "{{ output_dir }}/notes_secure.txt"
+        - "{{ output_dir }}/notes_by_title.txt"
+        - "{{ output_dir }}/notes_multiline.txt"
+
+    - name: Clean up output directory
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: absent
+
+    - name: Display test summary
+      ansible.builtin.debug:
+        msg: "========== NOTES COPY TESTS COMPLETE =========="

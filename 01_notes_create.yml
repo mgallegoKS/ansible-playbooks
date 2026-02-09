@@ -1,0 +1,129 @@
+---
+# 01_notes_create.yml - Create test records with various notes configurations
+# Creates records for use by subsequent notes test playbooks
+# AAP: Uses set_stats to pass record UIDs to subsequent workflow nodes
+
+- name: Notes Create - Create Test Records with Notes
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  vars:
+    shared_folder_uid: "2tIWb_eg35_E75I7wTOtkQ"
+
+  tasks:
+    - name: Display test header
+      ansible.builtin.debug:
+        msg: "========== NOTES CREATE TESTS =========="
+
+    # Test 1.1: Create login record with notes
+    - name: "Test 1.1 - Create login record with notes"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Notes Test - With Notes"
+        fields:
+          - type: login
+            value: "notes_test_user"
+          - type: password
+            value: "NotesTestPwd123!"
+          - type: url
+            value: "https://notes-test.example.com"
+        notes: "This is a test note for KSM-772 regression testing"
+      register: notes_record
+
+    - name: Assert notes record was created
+      ansible.builtin.assert:
+        that:
+          - notes_record.record_uid is defined
+          - notes_record.record_uid | length > 0
+        fail_msg: "Notes record was not created"
+        success_msg: "SUCCESS: Notes record created with UID {{ notes_record.record_uid }}"
+
+    # Test 1.2: Create login record without notes (empty notes)
+    - name: "Test 1.2 - Create login record without notes"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Notes Test - No Notes"
+        fields:
+          - type: login
+            value: "no_notes_user"
+          - type: password
+            value: "NoNotesPwd123!"
+      register: no_notes_record
+
+    - name: Assert no-notes record was created
+      ansible.builtin.assert:
+        that:
+          - no_notes_record.record_uid is defined
+          - no_notes_record.record_uid | length > 0
+        fail_msg: "No-notes record was not created"
+        success_msg: "SUCCESS: No-notes record created with UID {{ no_notes_record.record_uid }}"
+
+    # Test 1.3: Create record with multiline notes
+    - name: "Test 1.3 - Create record with multiline notes"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Notes Test - Multiline"
+        fields:
+          - type: login
+            value: "multiline_notes_user"
+          - type: password
+            value: "MultilinePwd123!"
+        notes: |
+          Line 1: This is a multiline note
+          Line 2: Used for KSM-772 regression testing
+          Line 3: Multiple lines should be preserved
+      register: multiline_record
+
+    - name: Assert multiline record was created
+      ansible.builtin.assert:
+        that:
+          - multiline_record.record_uid is defined
+          - multiline_record.record_uid | length > 0
+        fail_msg: "Multiline notes record was not created"
+        success_msg: "SUCCESS: Multiline notes record created with UID {{ multiline_record.record_uid }}"
+
+    # Test 1.4: Create record with special characters in notes
+    - name: "Test 1.4 - Create record with special characters in notes"
+      keeper_create:
+        shared_folder_uid: "{{ shared_folder_uid }}"
+        record_type: login
+        title: "[KSM-772] Notes Test - Special Chars"
+        fields:
+          - type: login
+            value: "special_notes_user"
+          - type: password
+            value: "SpecialPwd123!"
+        notes: "Special chars: !@#$%^&*() quotes: \"double\" and 'single' plus <angle> brackets"
+      register: special_record
+
+    - name: Assert special chars record was created
+      ansible.builtin.assert:
+        that:
+          - special_record.record_uid is defined
+          - special_record.record_uid | length > 0
+        fail_msg: "Special chars notes record was not created"
+        success_msg: "SUCCESS: Special chars notes record created with UID {{ special_record.record_uid }}"
+
+    # Pass record UIDs to subsequent workflow nodes via set_stats
+    - name: Pass record UIDs to workflow
+      ansible.builtin.set_stats:
+        data:
+          notes_record_uid: "{{ notes_record.record_uid }}"
+          no_notes_record_uid: "{{ no_notes_record.record_uid }}"
+          multiline_record_uid: "{{ multiline_record.record_uid }}"
+          special_record_uid: "{{ special_record.record_uid }}"
+
+    - name: Display created records summary
+      ansible.builtin.debug:
+        msg:
+          - "========== NOTES TEST RECORDS SUMMARY =========="
+          - "Notes Record: {{ notes_record.record_uid }}"
+          - "No Notes Record: {{ no_notes_record.record_uid }}"
+          - "Multiline Record: {{ multiline_record.record_uid }}"
+          - "Special Chars Record: {{ special_record.record_uid }}"
+          - "========== NOTES CREATE TESTS COMPLETE =========="

@@ -1,0 +1,149 @@
+---
+# 03_notes_set.yml - Test keeper_set with notes (KSM-772 verification)
+# Tests setting/updating notes on records using notes: yes parameter
+# AAP: Receives record UIDs as extra_vars from workflow (set_stats in 01)
+
+- name: Notes Set - Update Notes Tests (KSM-772)
+  hosts: localhost
+  gather_facts: false
+  collections:
+    - keepersecurity.keeper_secrets_manager
+
+  pre_tasks:
+    - name: Check if record UIDs are available
+      ansible.builtin.assert:
+        that:
+          - notes_record_uid is defined
+        fail_msg: "Record UIDs not provided. Run as part of the AAP workflow or pass UIDs as extra vars."
+        success_msg: "Notes test record UIDs loaded successfully"
+
+  tasks:
+    - name: Display test header
+      ansible.builtin.debug:
+        msg: "========== NOTES SET TESTS (KSM-772) =========="
+
+    # Test 3.1: Set notes on a record by UID - happy path
+    - name: "Test 3.1 - Set notes by UID (happy path)"
+      keeper_set:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+        value: "Updated notes via keeper_set - KSM-772 test"
+      register: set_notes_result
+
+    - name: Assert set notes did not fail
+      ansible.builtin.assert:
+        that:
+          - set_notes_result is not failed
+        fail_msg: "Setting notes by UID failed"
+        success_msg: "SUCCESS: Notes set by UID without error"
+
+    # Test 3.2: Verify the value was actually set (KSM-772 core verification)
+    - name: "Test 3.2 - Verify notes were set (KSM-772 core test)"
+      keeper_get:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+      register: verify_notes_set
+
+    - name: Display verified notes
+      ansible.builtin.debug:
+        msg: "Verified notes value: {{ verify_notes_set.value }}"
+
+    - name: Assert notes value matches what was set (KSM-772)
+      ansible.builtin.assert:
+        that:
+          - verify_notes_set.value is defined
+          - verify_notes_set.value == "Updated notes via keeper_set - KSM-772 test"
+        fail_msg: "KSM-772 REGRESSION: Notes value was NOT set correctly (got '{{ verify_notes_set.value | default('None/undefined') }}')"
+        success_msg: "SUCCESS: KSM-772 verified - notes value correctly set and retrieved"
+
+    # Test 3.3: Update existing notes with new value - verify overwrite
+    - name: "Test 3.3 - Update existing notes (overwrite)"
+      keeper_set:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+        value: "Overwritten notes - second update"
+      register: update_notes_result
+
+    - name: Verify notes were overwritten
+      keeper_get:
+        uid: "{{ notes_record_uid }}"
+        notes: yes
+      register: verify_overwrite
+
+    - name: Assert notes were overwritten
+      ansible.builtin.assert:
+        that:
+          - verify_overwrite.value == "Overwritten notes - second update"
+        fail_msg: "Notes were not overwritten correctly"
+        success_msg: "SUCCESS: Notes overwritten successfully"
+
+    # Test 3.4: Set notes to empty string
+    - name: "Test 3.4 - Set notes to empty string"
+      keeper_set:
+        uid: "{{ no_notes_record_uid }}"
+        notes: yes
+        value: ""
+      register: set_empty_notes
+      ignore_errors: true
+
+    - name: Display empty notes set result
+      ansible.builtin.debug:
+        msg: "Set empty notes result: {{ set_empty_notes }}"
+
+    - name: Assert set empty notes did not crash
+      ansible.builtin.assert:
+        that:
+          - set_empty_notes is not failed
+        fail_msg: "Setting notes to empty string caused an error"
+        success_msg: "SUCCESS: Setting notes to empty string handled gracefully"
+
+    # Test 3.5: Set notes with multiline content
+    - name: "Test 3.5 - Set multiline notes"
+      keeper_set:
+        uid: "{{ multiline_record_uid }}"
+        notes: yes
+        value: |
+          Updated Line 1: New multiline content
+          Updated Line 2: Set via keeper_set
+          Updated Line 3: KSM-772 verification
+      register: set_multiline_result
+
+    - name: Verify multiline notes were set
+      keeper_get:
+        uid: "{{ multiline_record_uid }}"
+        notes: yes
+      register: verify_multiline_set
+
+    - name: Assert multiline notes were set correctly
+      ansible.builtin.assert:
+        that:
+          - "'Updated Line 1' in verify_multiline_set.value"
+          - "'Updated Line 2' in verify_multiline_set.value"
+          - "'Updated Line 3' in verify_multiline_set.value"
+        fail_msg: "Multiline notes were not set correctly"
+        success_msg: "SUCCESS: Multiline notes set and verified"
+
+    # Test 3.6: Set notes by title
+    - name: "Test 3.6 - Set notes by title"
+      keeper_set:
+        title: "[KSM-772] Notes Test - Special Chars"
+        notes: yes
+        value: "Notes updated by title - KSM-772"
+      register: set_notes_by_title
+
+    - name: Verify notes set by title
+      keeper_get:
+        uid: "{{ special_record_uid }}"
+        notes: yes
+      register: verify_title_set
+
+    - name: Assert notes were set by title
+      ansible.builtin.assert:
+        that:
+          - verify_title_set.value == "Notes updated by title - KSM-772"
+        fail_msg: "Notes were not set correctly by title"
+        success_msg: "SUCCESS: Notes set by title and verified"
+
+    - name: Display test summary
+      ansible.builtin.debug:
+        msg: "========== NOTES SET TESTS COMPLETE =========="
